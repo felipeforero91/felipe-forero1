@@ -1,1083 +1,2346 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
-  <title>Felipe Forero</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <style>
-    :root{
-      --bg:#0b0f14;
-      --panel:#0f1620;
-      --panel2:#101b28;
-      --text:#e7eef9;
-      --muted:#a7b3c7;
-      --line:#1f2a3a;
-      --good:#1bd37a;
-      --bad:#ff4d6d;
-      --btn:#172334;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius:18px;
-      --ripple: rgba(231,238,249,.25);
-      --soft: rgba(255,255,255,.05);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 600px at 10% -10%, rgba(27,211,122,.12), transparent 60%),
-                  radial-gradient(1000px 500px at 90% 0%, rgba(255,77,109,.10), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-    }
-
-    /* Splash */
-    .splash{
-      position:fixed; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      background: rgba(11,15,20,.92);
-      backdrop-filter: blur(10px);
-      z-index:2000;
-      transition: opacity .35s ease, transform .35s ease;
-    }
-    .splash.hide{opacity:0; pointer-events:none; transform: scale(1.01)}
-    .brand{display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;}
-    .logo{
-      width:64px; height:64px; border-radius:18px;
-      border:1px solid rgba(31,42,58,.9);
-      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
-      display:grid; place-items:center;
-      box-shadow: var(--shadow);
-      position:relative; overflow:hidden;
-    }
-    .logo::before{
-      content:"";
-      position:absolute; inset:-40%;
-      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
-      animation: spin 1.4s linear infinite;
-      filter: blur(1px);
-      opacity:.85;
-    }
-    .logo span{
-      position:relative;
-      font-weight:900;
-      letter-spacing:.5px;
-      font-size:18px;
-      padding:10px 12px;
-      border-radius:12px;
-      background: rgba(11,15,20,.8);
-      border:1px solid rgba(31,42,58,.75);
-    }
-    .subtitle{color:var(--muted); font-size:12px; letter-spacing:.2px;}
-    .loadingbar{
-      width:220px; height:10px;
-      border-radius:999px;
-      border:1px solid rgba(31,42,58,.85);
-      background: rgba(16,27,40,.55);
-      overflow:hidden;
-    }
-    .loadingbar .fill{
-      height:100%;
-      width:35%;
-      border-radius:999px;
-      background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(255,77,109,.65));
-      animation: loadmove 1.05s ease-in-out infinite;
-    }
-    @keyframes loadmove{0%{transform: translateX(-40%)}50%{transform: translateX(120%)}100%{transform: translateX(-40%)}}
-    @keyframes spin{to{transform: rotate(360deg)}}
-
-    header{
-      padding:18px 18px 8px;
-      position:sticky; top:0;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.65));
-      border-bottom:1px solid rgba(31,42,58,.5);
-      z-index:50;
-    }
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    .toprow{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
-    h1{font-size:18px;margin:0;letter-spacing:.2px;display:flex; gap:10px; align-items:center;}
-    .badge{
-      font-size:12px; padding:6px 10px;
-      border:1px solid rgba(31,42,58,.8);
-      border-radius:999px;
-      color:var(--muted);
-      background: rgba(16,27,40,.6);
-      display:inline-flex; gap:8px; align-items:center;
-    }
-    .badge strong{color:var(--text)}
-    .daynav{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-    select, button, input, textarea{
-      font:inherit; color:var(--text);
-      background: var(--btn);
-      border:1px solid rgba(31,42,58,.9);
-      border-radius:12px;
-      padding:10px 12px;
-      outline:none;
-    }
-    button{cursor:pointer}
-    button:hover{filter:brightness(1.08)}
-    button:active{transform:translateY(1px)}
-    .ghost{background:transparent}
-
-    .grid{display:grid; grid-template-columns: 1.25fr .75fr; gap:14px;}
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
-    .card{
-      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
-      border:1px solid rgba(31,42,58,.85);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:14px;
-      animation: popin .35s ease both;
-    }
-    @keyframes popin{from{opacity:0; transform: translateY(6px)}to{opacity:1; transform: translateY(0)}}
-    .card h2{margin:0 0 10px;font-size:14px;color:var(--muted);letter-spacing:.25px;text-transform:uppercase;}
-
-    .tasks{display:flex; flex-direction:column; gap:10px}
-    .task{
-      border:1px solid rgba(31,42,58,.8);
-      border-radius:16px;
-      background: rgba(16,27,40,.55);
-      padding:12px;
-      transition: transform .18s ease, border-color .18s ease, opacity .18s ease, background .18s ease, box-shadow .18s ease;
-      position:relative;
-    }
-    .task:hover{transform: translateY(-1px); border-color: rgba(80,95,120,.85)}
-
-    /* Tachado (cuando ya está marcada) */
-    .task.completed{
-      opacity:.88;
-      border-color: rgba(80,95,120,.55);
-    }
-    .task.completed::after{
-      content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
-      border-radius:16px;
-      pointer-events:none;
-    }
-    .task.completed .tasktitle b{
-      text-decoration: line-through;
-      text-decoration-thickness: 2px;
-      text-decoration-color: rgba(231,238,249,.35);
-    }
-
-    /* ✅/❌ Color por estado */
-    .task.done{
-      border-color: rgba(27,211,122,.55);
-      box-shadow: 0 0 0 1px rgba(27,211,122,.10) inset, 0 12px 30px rgba(0,0,0,.25);
-      background: linear-gradient(180deg, rgba(27,211,122,.08), rgba(16,27,40,.55));
-    }
-    .task.missed{
-      border-color: rgba(255,77,109,.55);
-      box-shadow: 0 0 0 1px rgba(255,77,109,.10) inset, 0 12px 30px rgba(0,0,0,.25);
-      background: linear-gradient(180deg, rgba(255,77,109,.08), rgba(16,27,40,.55));
-    }
-
-    .taskhead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
-    .tasktitle{display:flex; flex-direction:column; gap:4px}
-    .tasktitle b{font-size:16px}
-    .taskmeta{font-size:12px;color:var(--muted)}
-    .bigbtns{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
-
-    .bigbtn{
-      position:relative; overflow:hidden;
-      padding:12px 14px;
-      border-radius:14px;
-      min-width:130px;
-      font-weight:900;
-      letter-spacing:.2px;
-      border:1px solid rgba(31,42,58,.85);
-      background: #152235;
-      transition: transform .12s ease, filter .12s ease, box-shadow .2s ease, opacity .2s ease;
-    }
-    .bigbtn:active{transform: scale(.98)}
-    .bigbtn.good{border-color:rgba(27,211,122,.6); box-shadow:0 0 0 1px rgba(27,211,122,.12) inset}
-    .bigbtn.bad{border-color:rgba(255,77,109,.6); box-shadow:0 0 0 1px rgba(255,77,109,.12) inset}
-    .bigbtn.neutral{border-color: rgba(167,179,199,.35); background: rgba(21,34,53,.55);}
-    .bigbtn.pulse{animation: pulse .22s ease}
-    @keyframes pulse{0%{transform: scale(.98)}60%{transform: scale(1.03)}100%{transform: scale(1)}}
-    .ripple{
-      position:absolute; border-radius:999px;
-      transform: scale(0);
-      background: var(--ripple);
-      animation: rip .55s ease-out;
-      pointer-events:none;
-      mix-blend-mode: screen;
-    }
-    @keyframes rip{to{transform: scale(10); opacity:0}}
-
-    .bigbtn[disabled]{opacity:.55; cursor:not-allowed; filter:saturate(.8)}
-    .statuspill{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-top:8px;}
-    .dot{width:9px;height:9px;border-radius:999px;background:#55657d}
-    .dot.good{background:var(--good)}
-    .dot.bad{background:var(--bad)}
-    .dot.na{background:#55657d}
-
-    .kpis{display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:6px;}
-    @media (max-width: 520px){ .kpis{grid-template-columns:1fr} }
-    .kpi{background: rgba(16,27,40,.55); border:1px solid rgba(31,42,58,.8); border-radius:16px; padding:12px;}
-    .kpi .label{font-size:12px;color:var(--muted)}
-    .kpi .value{font-size:20px;font-weight:900;margin-top:6px}
-    .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}
-    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px}
-    .row{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      border:1px solid rgba(31,42,58,.75);
-      border-radius:14px;
-      padding:10px 12px;
-      background: rgba(16,27,40,.45);
-      color:var(--text);
-    }
-    .row small{color:var(--muted)}
-    .bar{height:10px; background: rgba(31,42,58,.7); border-radius:999px; overflow:hidden; width:44%; border:1px solid rgba(31,42,58,.85);}
-    .fill{height:100%; width:0%; background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(27,211,122,.65));}
-
-    .modalback{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.55);
-      display:none;
-      align-items:center; justify-content:center;
-      z-index:1000;
-      padding:18px;
-    }
-    .modal{
-      width:min(900px, 100%);
-      background: linear-gradient(180deg, rgba(15,22,32,.98), rgba(15,22,32,.88));
-      border:1px solid rgba(31,42,58,.9);
-      border-radius:22px;
-      box-shadow: var(--shadow);
-      padding:14px;
-      transform: translateY(10px);
-      opacity:0;
-      animation: modalIn .22s ease forwards;
-      position:relative; overflow:hidden;
-    }
-    @keyframes modalIn{to{transform: translateY(0); opacity:1}}
-    .modalheader{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(31,42,58,.6); padding-bottom:10px; margin-bottom:10px;}
-    .modalheader h3{margin:0; font-size:16px}
-    .modalheader p{margin:4px 0 0; color:var(--muted); font-size:12px}
-    .closebtn{background:transparent}
-    .cols{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
-    @media (max-width: 840px){ .cols{grid-template-columns:1fr} }
-    .subcard{border:1px solid rgba(31,42,58,.8); border-radius:18px; background: rgba(16,27,40,.55); padding:12px; position:relative;}
-    .subcard h4{margin:0 0 10px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.2px}
-    .check{display:flex; gap:10px; align-items:flex-start; padding:8px 8px; border-radius:12px;}
-    .check:hover{background: rgba(255,255,255,.03)}
-    .check input{margin-top:2px; transform: scale(1.1)}
-    textarea{
-      width:100%; min-height:120px; resize:vertical;
-      background: rgba(11,15,20,.45);
-      border:1px solid rgba(31,42,58,.9);
-      border-radius:14px;
-      padding:10px 12px;
-      color:var(--text);
-    }
-    .modalfooter{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; border-top:1px solid rgba(31,42,58,.6); padding-top:10px;}
-    .danger{border-color: rgba(255,77,109,.6)}
-    .ok{border-color: rgba(27,211,122,.6)}
-    .mini{padding:8px 10px; border-radius:12px; font-size:12px}
-    .hint{font-size:12px;color:var(--muted)}
-
-    .modalLoader{
-      position:absolute; inset:0;
-      background: rgba(11,15,20,.75);
-      display:flex; align-items:center; justify-content:center;
-      backdrop-filter: blur(8px);
-      z-index:2;
-      opacity:0; pointer-events:none;
-      transition: opacity .18s ease;
-    }
-    .modalLoader.show{opacity:1; pointer-events:auto}
-    .loaderMini{
-      display:flex; flex-direction:column; align-items:center; gap:10px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(31,42,58,.85);
-      background: rgba(15,22,32,.85);
-      box-shadow: var(--shadow);
-    }
-    .loaderMini .ff{
-      width:44px;height:44px;border-radius:14px;
-      border:1px solid rgba(31,42,58,.85);
-      display:grid; place-items:center;
-      font-weight:900;
-      background: rgba(11,15,20,.75);
-      position:relative; overflow:hidden;
-    }
-    .loaderMini .ff::before{
-      content:"";
-      position:absolute; inset:-50%;
-      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
-      animation: spin 1.2s linear infinite;
-    }
-    .loaderMini .ff span{position:relative; z-index:2;}
-
-    .links{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
-    .links a{
-      text-decoration:none; color: var(--text);
-      border:1px solid rgba(31,42,58,.75);
-      background: rgba(16,27,40,.45);
-      padding:10px 12px;
-      border-radius:14px;
-      transition: transform .12s ease, filter .12s ease;
-    }
-    .links a:hover{filter: brightness(1.08)}
-    .links a:active{transform: translateY(1px)}
-    .links a small{display:block; color:var(--muted); margin-top:3px}
-
-    .report{
-      margin-top:12px;
-      border:1px solid rgba(31,42,58,.8);
-      border-radius:16px;
-      background: rgba(16,27,40,.45);
-      padding:12px;
-      white-space: pre-wrap;
-      line-height:1.35;
-      font-size:13px;
-      color: var(--text);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="splash" id="splash">
-    <div class="brand">
-      <div class="logo"><span>FF</span></div>
-      <div style="font-weight:900; letter-spacing:.2px">Felipe Forero</div>
-      <div class="subtitle">Music First • disciplina • estadísticas</div>
-      <div class="loadingbar"><div class="fill"></div></div>
-    </div>
-  </div>
-
-<header>
-  <div class="wrap">
-    <div class="toprow">
-      <h1>Felipe Forero <span class="badge"><strong>Music First</strong> • simple • medible</span></h1>
-
-      <div class="daynav">
-        <span class="badge" id="todayLabel">Hoy</span>
-
-        <select id="daySelect" title="Cambiar día">
-          <option value="mon">Lunes</option>
-          <option value="tue">Martes</option>
-          <option value="wed">Miércoles</option>
-          <option value="thu">Jueves</option>
-          <option value="fri">Viernes</option>
-          <option value="sat">Sábado</option>
-          <option value="sun">Domingo</option>
-        </select>
-
-        <button id="goTodayBtn" class="ghost">Ir a hoy</button>
-        <button id="weeklyReportBtn" class="ghost">Informe semanal</button>
-        <button id="exportBtn" class="ghost">Exportar</button>
-        <button id="importBtn" class="ghost">Importar</button>
-        <button id="resetWeekBtn" class="ghost danger">Reset semana</button>
-      </div>
-    </div>
-  </div>
-</header>
-
-<div class="wrap">
-  <div class="grid">
-    <section class="card">
-      <h2>Tareas del día</h2>
-      <div class="tasks" id="tasks"></div>
-      <div class="hint" style="margin-top:10px">
-        Música tiene 2 niveles: mínima (30min) o profunda (2h+). Marca una.
-      </div>
-      <div class="report" id="reportBox" style="display:none"></div>
-    </section>
-
-    <aside class="card">
-      <h2>Estadísticas</h2>
-
-      <div class="kpis">
-        <div class="kpi">
-          <div class="label">% de hoy</div>
-          <div class="value" id="kpiToday">0%</div>
-          <div class="sub" id="kpiTodaySub">0/0 tareas</div>
-        </div>
-        <div class="kpi">
-          <div class="label">% semana</div>
-          <div class="value" id="kpiWeek">0%</div>
-          <div class="sub" id="kpiWeekSub">0/0 tareas</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Racha Música</div>
-          <div class="value" id="kpiStreak">0</div>
-          <div class="sub" id="kpiStreakSub">días seguidos</div>
-        </div>
-      </div>
-
-      <div style="margin-top:12px">
-        <canvas id="weekChart" height="170"></canvas>
-      </div>
-
-      <div class="list" id="byGoalList"></div>
-    </aside>
-  </div>
-</div>
-
-<div class="modalback" id="modalBack" role="dialog" aria-modal="true">
-  <div class="modal" id="modal">
-    <div class="modalLoader" id="modalLoader">
-      <div class="loaderMini">
-        <div class="ff"><span>FF</span></div>
-        <div class="subtitle">cargando…</div>
-      </div>
-    </div>
-
-    <div class="modalheader">
-      <div>
-        <h3 id="modalTitle">Tarea</h3>
-        <p id="modalMeta">Subtareas</p>
-      </div>
-      <button class="closebtn" id="closeModalBtn">Cerrar ✕</button>
-    </div>
-
-    <div class="cols">
-      <div class="subcard">
-        <h4>Subtareas</h4>
-        <div id="subtasks"></div>
-
-        <h4 style="margin-top:12px">Tutoriales</h4>
-        <div class="links" id="tutorialLinks"></div>
-      </div>
-
-      <div class="subcard">
-        <h4>Notas (opcional)</h4>
-        <textarea id="notes" placeholder="Qué hiciste, qué aprendiste, links, ideas, etc."></textarea>
-        <div class="hint" style="margin-top:8px">
-          Tip: aquí escribe tu mini log de música (ideas, hooks, demos).
-        </div>
-      </div>
-    </div>
-
-    <div class="modalfooter">
-      <div class="hint" id="modalHint">Se guarda automáticamente.</div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap">
-        <button id="clearTaskBtn" class="mini danger">Borrar estado</button>
-        <button id="saveCloseBtn" class="mini ok">Guardar y cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-/** ========= Tutorials ========= */
-const TUTORIALS = {
-  musica: [
-    { title:"Ableton Live for Beginners (playlist)", url:"https://www.youtube.com/playlist?list=PLoO2tOP2r-XsXH0lybWl9zMvYp3lpLF46", note:"Producción desde cero" },
-    { title:"Compresión (cómo usarla bien)", url:"https://www.youtube.com/watch?v=yi0J9JsRdI4", note:"Mixing / compresión" }
-  ],
-  edicion: [
-    { title:"DaVinci Resolve Full Course (Beginners)", url:"https://www.youtube.com/watch?v=MCDVcQIA3UM", note:"Curso completo" }
-  ],
-  foto: [
-    { title:"Photography playlist (Tony & Chelsea)", url:"https://www.youtube.com/playlist?list=PLNwO5t7U7k7CWJlE3PmgtZ7Dmuy6B-HtO", note:"Fundamentos" }
-  ],
-  animacion: [
-    { title:"12 Principles of Animation (Alan Becker)", url:"https://www.youtube.com/watch?v=uDqjIdI4bF4", note:"Serie de los 12 principios" }
-  ],
-  tatuar: [
-    { title:"Tattooing 101 (canal)", url:"https://www.youtube.com/c/Tattooing101", note:"Educación estructurada" }
-  ],
-  skate: [
-    { title:"How to Ollie for Beginners (Braille)", url:"https://www.youtube.com/watch?v=2m95ftcaJRw", note:"Ollie desde cero" }
-  ],
-  italiano: [
-    { title:"LearnAmo playlists", url:"https://www.youtube.com/c/LearnAmo/playlists", note:"Italiano A1–B1" }
-  ]
-};
-
-/** ========= Goals + subtasks ========= */
-const GOALS = {
-  musica: { name:"Música (diaria)", subtasks:[
-    "Composición (melodía/letra)","Producción (arreglo/sonido)","Grabación",
-    "Mezcla (balance/FX)","Export / Demo / Backup","Marketing / Post"
-  ]},
-  gym: { name:"Gym / Cuerpo", subtasks:["Fuerza","Cardio 10–20 min","Proteína","Agua + pasos"]},
-  skate: { name:"Skate", subtasks:["Calentamiento","Técnica","Trucos (objetivo)","Estiramiento"]},
-  italiano: { name:"Italiano", subtasks:["Vocabulario","Escucha","Hablar","Gramática","Escritura"]},
-  edicion: { name:"Edición de video (musical)", subtasks:["Organizar","Cortes","Color","Audio/sync","Textos","Export"]},
-  foto: { name:"Fotografía", subtasks:["Disparar","Composición","Luz","Edición","Portafolio"]},
-  animacion: { name:"Animación", subtasks:["Ejercicio","Timing","Escena pequeña","Render","Notas"]},
-  tatuar: { name:"Tatuaje", subtasks:["Teoría (seguridad)","Trazos","Sombras","Diseño","Piel sintética"]},
-};
-
-/** ========= Week plan ========= */
-const WEEK_PLAN = {
-  mon: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
-  tue: [{id:"musica",window:"9:00–12:00",mode:"enfoque"},{id:"foto",window:"15:00–16:30",mode:"creativo"},{id:"gym",window:"18:00–19:00",mode:"físico"}],
-  wed: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"tatuar",window:"15:00–16:30",mode:"habilidad"},{id:"gym",window:"18:00–19:00",mode:"físico"},{id:"italiano",window:"21:00–21:30",mode:"ligero"}],
-  thu: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"animacion",window:"21:00–22:00",mode:"técnico"}],
-  fri: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"skate",window:"15:30–16:30",mode:"físico"}],
-  sat: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"gym",window:"15:30–16:30",mode:"físico"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
-  sun: [{id:"musica",window:"9:00–10:00 (ligero)",mode:"ligero"},{id:"skate",window:"15:00–16:00",mode:"físico"},{id:"animacion",window:"20:30–21:30",mode:"técnico"}],
-};
-
-/**
- * Música ahora tiene 2 niveles.
- * - musica_min: cuenta como "mínima" (30min)
- * - musica_deep: cuenta como "profunda" (2h+)
- */
-const WEIGHTS = { musica_min:3, musica_deep:5, gym:2, skate:2, italiano:1, edicion:2, foto:2, animacion:2, tatuar:2 };
-
-/** ========= Storage ========= */
-const LS_KEY="felipe_forero_dashboard_v3";
-function loadData(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
-function saveData(data){localStorage.setItem(LS_KEY, JSON.stringify(data));}
-function getWeekKey(date){
-  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
-  const dayNum=d.getUTCDay()||7;
-  d.setUTCDate(d.getUTCDate()+4-dayNum);
-  const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  const weekNo=Math.ceil((((d-yearStart)/86400000)+1)/7);
-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
-}
-function dayKeyFromDate(date){
-  const map=["sun","mon","tue","wed","thu","fri","sat"];
-  return map[date.getDay()];
-}
-function formatDateLabel(date){
-  return date.toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"short",day:"numeric"});
-}
-function ensurePath(obj,path,fallback){
-  let cur=obj;
-  for(let i=0;i<path.length;i++){
-    const k=path[i];
-    if(cur[k]==null) cur[k]=(i===path.length-1?fallback:{});
-    cur=cur[k];
-  }
-  return cur;
-}
-function labelDay(dayKey){
-  const map={mon:"Lunes",tue:"Martes",wed:"Miércoles",thu:"Jueves",fri:"Viernes",sat:"Sábado",sun:"Domingo"};
-  return map[dayKey]||dayKey;
-}
-
-/** ========= State + DOM ========= */
-const state={ selectedDay:null, weekKey:null, data:loadData(), modal:{open:false,goalId:null,dayKey:null} };
-
-const tasksEl=document.getElementById("tasks");
-const daySelect=document.getElementById("daySelect");
-const todayLabel=document.getElementById("todayLabel");
-const goTodayBtn=document.getElementById("goTodayBtn");
-const resetWeekBtn=document.getElementById("resetWeekBtn");
-const weeklyReportBtn=document.getElementById("weeklyReportBtn");
-const exportBtn=document.getElementById("exportBtn");
-const importBtn=document.getElementById("importBtn");
-
-const kpiToday=document.getElementById("kpiToday");
-const kpiTodaySub=document.getElementById("kpiTodaySub");
-const kpiWeek=document.getElementById("kpiWeek");
-const kpiWeekSub=document.getElementById("kpiWeekSub");
-const kpiStreak=document.getElementById("kpiStreak");
-const kpiStreakSub=document.getElementById("kpiStreakSub");
-const byGoalList=document.getElementById("byGoalList");
-const reportBox=document.getElementById("reportBox");
-
-const modalBack=document.getElementById("modalBack");
-const closeModalBtn=document.getElementById("closeModalBtn");
-const saveCloseBtn=document.getElementById("saveCloseBtn");
-const clearTaskBtn=document.getElementById("clearTaskBtn");
-const modalTitle=document.getElementById("modalTitle");
-const modalMeta=document.getElementById("modalMeta");
-const subtasksEl=document.getElementById("subtasks");
-const notesEl=document.getElementById("notes");
-const tutorialLinks=document.getElementById("tutorialLinks");
-const modalLoader=document.getElementById("modalLoader");
-
-let chart=null;
-
-/** ========= Ripple helper ========= */
-function ripple(btn,event){
-  const r=document.createElement("span");
-  r.className="ripple";
-  const rect=btn.getBoundingClientRect();
-  const size=Math.max(rect.width,rect.height);
-  r.style.width=r.style.height=size+"px";
-  const x=(event.clientX-rect.left)-(size/2);
-  const y=(event.clientY-rect.top)-(size/2);
-  r.style.left=x+"px"; r.style.top=y+"px";
-  btn.appendChild(r);
-  setTimeout(()=>r.remove(),600);
-  btn.classList.remove("pulse"); void btn.offsetWidth; btn.classList.add("pulse");
-}
-
-/** ========= Records ========= */
-function getRecord(weekKey, dayKey, goalId){
-  const week=ensurePath(state.data,[weekKey],{});
-  const day=ensurePath(week,[dayKey],{});
-  const rec=ensurePath(day,[goalId],{status:null,musicLevel:null,subtasks:{},notes:""});
-  if(rec.subtasks==null) rec.subtasks={};
-  if(rec.notes==null) rec.notes="";
-  if(rec.musicLevel==null) rec.musicLevel=null;
-  return rec;
-}
-function setStatus(weekKey, dayKey, goalId, status, musicLevel=null){
-  const rec=getRecord(weekKey, dayKey, goalId);
-  rec.status=status;
-  if(goalId==="musica") rec.musicLevel = musicLevel;
-  saveData(state.data);
-  render();
-}
-function setSubtask(weekKey, dayKey, goalId, subtaskLabel, value){
-  const rec=getRecord(weekKey, dayKey, goalId);
-  rec.subtasks[subtaskLabel]=!!value;
-  saveData(state.data);
-}
-function setNotes(weekKey, dayKey, goalId, notes){
-  const rec=getRecord(weekKey, dayKey, goalId);
-  rec.notes=notes;
-  saveData(state.data);
-}
-
-/** ========= Modal ========= */
-function openModal(dayKey, goalId){
-  modalLoader.classList.add("show");
-  modalBack.style.display="flex";
-
-  setTimeout(()=>{
-    const goal=GOALS[goalId];
-    const rec=getRecord(state.weekKey, dayKey, goalId);
-
-    state.modal={open:true,dayKey,goalId};
-
-    modalTitle.textContent=goal.name;
-    modalMeta.textContent=`${labelDay(dayKey)} • Semana ${state.weekKey}`;
-
-    subtasksEl.innerHTML="";
-    for(const label of (goal.subtasks||[])){
-      const row=document.createElement("label");
-      row.className="check";
-      const cb=document.createElement("input");
-      cb.type="checkbox";
-      cb.checked=!!rec.subtasks[label];
-      cb.onchange=()=>{
-        setSubtask(state.weekKey, dayKey, goalId, label, cb.checked);
-        const r=getRecord(state.weekKey, dayKey, goalId);
-        if(r.status==null){
-          r.status="yes";
-          saveData(state.data);
-          render();
-        }
-      };
-      const span=document.createElement("span");
-      span.textContent=label;
-      row.appendChild(cb); row.appendChild(span);
-      subtasksEl.appendChild(row);
-    }
-
-    notesEl.value=rec.notes||"";
-    notesEl.oninput=()=>setNotes(state.weekKey, dayKey, goalId, notesEl.value);
-
-    tutorialLinks.innerHTML="";
-    const links=TUTORIALS[goalId]||[];
-    if(!links.length){
-      tutorialLinks.innerHTML=`<div class="hint">Sin links aún.</div>`;
-    }else{
-      for(const l of links){
-        const a=document.createElement("a");
-        a.href=l.url; a.target="_blank"; a.rel="noopener";
-        a.innerHTML=`<b>${l.title}</b><small>${l.note||""}</small>`;
-        tutorialLinks.appendChild(a);
-      }
-    }
-
-    modalLoader.classList.remove("show");
-  }, 240);
-}
-function closeModal(){
-  state.modal={open:false,goalId:null,dayKey:null};
-  modalBack.style.display="none";
-}
-closeModalBtn.onclick=closeModal;
-saveCloseBtn.onclick=()=>{saveData(state.data); closeModal(); render();};
-modalBack.addEventListener("click",(e)=>{ if(e.target===modalBack) closeModal(); });
-
-clearTaskBtn.onclick=()=>{
-  const {dayKey,goalId}=state.modal;
-  if(!dayKey||!goalId) return;
-  const rec=getRecord(state.weekKey, dayKey, goalId);
-  rec.status=null;
-  rec.musicLevel=null;
-  rec.subtasks={};
-  rec.notes="";
-  saveData(state.data);
-  closeModal();
-  render();
-};
-
-/** ========= Stats ========= */
-function musicWeightFromRec(rec){
-  if(rec.status!=="yes") return 0;
-  if(rec.musicLevel==="deep") return WEIGHTS.musica_deep;
-  if(rec.musicLevel==="min") return WEIGHTS.musica_min;
-  return WEIGHTS.musica_min;
-}
-function computeDayScore(weekKey, dayKey){
-  const plan=WEEK_PLAN[dayKey]||[];
-  let got=0,total=0,doneTasks=0,totalTasks=0;
-
-  for(const t of plan){
-    totalTasks++;
-    if(t.id==="musica"){
-      total += WEIGHTS.musica_deep;
-      const rec=getRecord(weekKey, dayKey, "musica");
-      const w = musicWeightFromRec(rec);
-      if(w>0){ got += w; doneTasks++; }
-    }else{
-      const w=WEIGHTS[t.id]??1;
-      total += w;
-      const rec=getRecord(weekKey, dayKey, t.id);
-      if(rec.status==="yes"){ got += w; doneTasks++; }
-    }
-  }
-  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
-}
-function computeWeekScore(weekKey){
-  const days=["mon","tue","wed","thu","fri","sat","sun"];
-  let got=0,total=0,doneTasks=0,totalTasks=0;
-
-  for(const d of days){
-    for(const t of (WEEK_PLAN[d]||[])){
-      totalTasks++;
-      if(t.id==="musica"){
-        total += WEIGHTS.musica_deep;
-        const rec=getRecord(weekKey, d, "musica");
-        const w = musicWeightFromRec(rec);
-        if(w>0){ got += w; doneTasks++; }
-      }else{
-        const w=WEIGHTS[t.id]??1;
-        total += w;
-        const rec=getRecord(weekKey, d, t.id);
-        if(rec.status==="yes"){ got += w; doneTasks++; }
-      }
-    }
-  }
-  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
-}
-function computeByGoal(weekKey){
-  const days=["mon","tue","wed","thu","fri","sat","sun"];
-  const stats={};
-  for(const gid of Object.keys(GOALS)) stats[gid]={scheduled:0,done:0,pct:0};
-
-  for(const d of days){
-    for(const t of (WEEK_PLAN[d]||[])){
-      stats[t.id].scheduled++;
-      const rec=getRecord(weekKey, d, t.id);
-      if(t.id==="musica"){
-        if(rec.status==="yes") stats[t.id].done++;
-      }else{
-        if(rec.status==="yes") stats[t.id].done++;
-      }
-    }
-  }
-  for(const gid of Object.keys(stats)){
-    const s=stats[gid];
-    s.pct = s.scheduled?Math.round((s.done/s.scheduled)*100):0;
-  }
-  return stats;
-}
-function computeMusicStreakToToday(weekKey){
-  const days=["mon","tue","wed","thu","fri","sat","sun"];
-  const todayKey=dayKeyFromDate(new Date());
-  let upto=0;
-  for(const d of days){
-    const rec=getRecord(weekKey, d, "musica");
-    if(rec.status==="yes") upto++;
-    else upto=0;
-    if(d===todayKey) break;
-  }
-  return upto;
-}
-function renderChart(){
-  if(!window.Chart) return;
-  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-  const days=["mon","tue","wed","thu","fri","sat","sun"];
-  const values=days.map(d=>computeDayScore(state.weekKey,d).pct);
-  const ctx=document.getElementById("weekChart");
-  if(chart) chart.destroy();
-  chart=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"% por día",data:values,tension:0.35}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"}}}}
-  });
-}
-function renderStats(){
-  const day=state.selectedDay;
-  const d=computeDayScore(state.weekKey, day);
-  kpiToday.textContent=d.pct+"%";
-  kpiTodaySub.textContent=`${d.doneTasks}/${d.totalTasks} tareas`;
-
-  const w=computeWeekScore(state.weekKey);
-  kpiWeek.textContent=w.pct+"%";
-  kpiWeekSub.textContent=`${w.doneTasks}/${w.totalTasks} tareas`;
-
-  const streak=computeMusicStreakToToday(state.weekKey);
-  kpiStreak.textContent=String(streak);
-  kpiStreakSub.textContent="días seguidos (hasta hoy)";
-
-  const byGoal=computeByGoal(state.weekKey);
-  byGoalList.innerHTML="";
-  const title=document.createElement("h2");
-  title.textContent="Por objetivo (semana)";
-  byGoalList.appendChild(title);
-
-  const entries=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>b[1].pct-a[1].pct);
-  for(const [gid,s] of entries){
-    const r=document.createElement("div"); r.className="row";
-    const left=document.createElement("div");
-    left.innerHTML=`<div><b>${GOALS[gid]?.name||gid}</b></div><small>${s.done}/${s.scheduled} cumplidas</small>`;
-    const bar=document.createElement("div"); bar.className="bar";
-    const fill=document.createElement("div"); fill.className="fill"; fill.style.width=`${s.pct}%`;
-    bar.appendChild(fill);
-    const right=document.createElement("div"); right.innerHTML=`<b>${s.pct}%</b>`;
-    r.appendChild(left); r.appendChild(bar); r.appendChild(right);
-    byGoalList.appendChild(r);
-  }
-
-  renderChart();
-}
-
-/** ========= Weekly report ========= */
-function generateWeeklyReport(){
-  const byGoal=computeByGoal(state.weekKey);
-  const week=computeWeekScore(state.weekKey);
-
-  const sorted=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>a[1].pct-b[1].pct);
-  const bottom=sorted.slice(0,3);
-  const top=sorted.slice(-2).reverse();
-
-  const days=["mon","tue","wed","thu","fri","sat","sun"];
-  const missedMusic = days.filter(d=>getRecord(state.weekKey,d,"musica").status!=="yes").map(labelDay);
-
-  const recs=[];
-  for(const [gid,_] of bottom){
-    if(gid==="musica"){
-      recs.push("Música: mínimo 30 min SIEMPRE. Si estás cansado, haz ‘mínima’ y listo.");
-    }else if(gid==="italiano"){
-      recs.push("Italiano: micro-sesión diaria (10–15 min). No la pongas solo cuando tengas energía.");
-    }else if(gid==="edicion"){
-      recs.push("Edición: haz 1 paso fijo (solo cortes + export). Evita el perfeccionismo.");
-    }else if(gid==="gym"){
-      recs.push("Cuerpo: si no hay gym, reemplaza por caminata + flexiones 15 min.");
-    }else if(gid==="skate"){
-      recs.push("Skate: 20–30 min técnica + 1 truco objetivo, mejor que 0.");
-    }else{
-      recs.push(`${GOALS[gid].name}: reduce el alcance (1 ejercicio corto por sesión).`);
-    }
-  }
-
-  const text =
-`📌 INFORME SEMANAL — ${state.weekKey}
-
-✅ Cumplimiento general: ${week.pct}% (${week.doneTasks}/${week.totalTasks} tareas)
-
-⭐ Lo mejor:
-${top.map(([gid,s])=>`- ${GOALS[gid].name}: ${s.pct}%`).join("\n") || "- (sin datos)"}
-
-⚠️ Lo más flojo:
-${bottom.map(([gid,s])=>`- ${GOALS[gid].name}: ${s.pct}%`).join("\n") || "- (sin datos)"}
-
-🎵 Música (días sin cumplir):
-${missedMusic.length ? "- " + missedMusic.join(", ") : "- Perfecto. Cadena intacta."}
-
-🎯 Recomendaciones directas:
-${recs.map(r=>`- ${r}`).join("\n")}
-`;
-
-  reportBox.style.display="block";
-  reportBox.textContent=text;
-  reportBox.scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-/** ========= Render tasks ========= */
-function render(){
-  todayLabel.textContent = "Hoy: " + formatDateLabel(new Date());
-  tasksEl.innerHTML="";
-  reportBox.style.display="none";
-
-  const day=state.selectedDay;
-  const plan=WEEK_PLAN[day]||[];
-
-  for(const item of plan){
-    const goalId=item.id;
-    const goal=GOALS[goalId];
-    const rec=getRecord(state.weekKey, day, goalId);
-    const status=rec.status;
-
-    // ✅/❌ color por estado + tachado
-    let cls="task";
-    if(status!=null) cls += " completed";
-    if(status==="yes") cls += " done";
-    if(status==="no") cls += " missed";
-
-    const task=document.createElement("div");
-    task.className=cls;
-
-    const head=document.createElement("div");
-    head.className="taskhead";
-
-    const title=document.createElement("div");
-    title.className="tasktitle";
-
-    const b=document.createElement("b");
-    b.textContent=goal.name;
-
-    const meta=document.createElement("div");
-    meta.className="taskmeta";
-
-    if(goalId==="musica" && status==="yes"){
-      const level = rec.musicLevel==="deep" ? "profunda (2h+)" : "mínima (30m)";
-      meta.textContent=`${item.window} • ${item.mode} • ✅ ${level}`;
-    }else{
-      meta.textContent=`${item.window} • ${item.mode}`;
-    }
-
-    title.appendChild(b);
-    title.appendChild(meta);
-
-    const btns=document.createElement("div");
-    btns.className="bigbtns";
-
-    if(goalId==="musica"){
-      const minBtn=document.createElement("button");
-      minBtn.className="bigbtn good";
-      minBtn.textContent="✅ Mínima (30m)";
-      minBtn.disabled = status!=null;
-      minBtn.onclick=(e)=>{ ripple(minBtn,e); setStatus(state.weekKey, day, "musica", "yes", "min"); openModal(day,"musica"); };
-
-      const deepBtn=document.createElement("button");
-      deepBtn.className="bigbtn good";
-      deepBtn.textContent="🔥 Profunda (2h+)";
-      deepBtn.disabled = status!=null;
-      deepBtn.onclick=(e)=>{ ripple(deepBtn,e); setStatus(state.weekKey, day, "musica", "yes", "deep"); openModal(day,"musica"); };
-
-      const noBtn=document.createElement("button");
-      noBtn.className="bigbtn bad";
-      noBtn.textContent="❌ No";
-      noBtn.disabled = status!=null;
-      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, "musica", "no", null); openModal(day,"musica"); };
-
-      if(status!=null){
-        const editBtn=document.createElement("button");
-        editBtn.className="bigbtn neutral";
-        editBtn.textContent="✏️ Editar";
-        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day,"musica"); };
-        btns.appendChild(editBtn);
-      }else{
-        btns.appendChild(minBtn);
-        btns.appendChild(deepBtn);
-        btns.appendChild(noBtn);
-      }
-    }else{
-      const yesBtn=document.createElement("button");
-      yesBtn.className="bigbtn good";
-      yesBtn.textContent="✅ Cumplí";
-      yesBtn.disabled = status!=null;
-      yesBtn.onclick=(e)=>{ ripple(yesBtn,e); setStatus(state.weekKey, day, goalId, "yes"); openModal(day, goalId); };
-
-      const noBtn=document.createElement("button");
-      noBtn.className="bigbtn bad";
-      noBtn.textContent="❌ No";
-      noBtn.disabled = status!=null;
-      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, goalId, "no"); openModal(day, goalId); };
-
-      if(status!=null){
-        const editBtn=document.createElement("button");
-        editBtn.className="bigbtn neutral";
-        editBtn.textContent="✏️ Editar";
-        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day, goalId); };
-        btns.appendChild(editBtn);
-      }else{
-        btns.appendChild(yesBtn);
-        btns.appendChild(noBtn);
-      }
-    }
-
-    head.appendChild(title);
-    head.appendChild(btns);
-
-    const pill=document.createElement("div");
-    pill.className="statuspill";
-    const dot=document.createElement("span");
-    dot.className="dot " + (status==="yes"?"good":status==="no"?"bad":"na");
-    const text=document.createElement("span");
-    text.textContent = status==="yes" ? "Marcado como: Cumplí" : status==="no" ? "Marcado como: No" : "Sin marcar";
-    pill.appendChild(dot); pill.appendChild(text);
-
-    task.appendChild(head);
-    task.appendChild(pill);
-    tasksEl.appendChild(task);
-  }
-
-  renderStats();
-}
-
-/** ========= Export/Import ========= */
-function download(filename, text){
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
-  a.download=filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-function uploadJson(){
-  const inp=document.createElement("input");
-  inp.type="file";
-  inp.accept="application/json";
-  inp.onchange=()=>{
-    const file=inp.files[0];
-    if(!file) return;
-    const reader=new FileReader();
-    reader.onload=()=>{
-      try{
-        const obj=JSON.parse(String(reader.result||"{}"));
-        state.data=obj;
-        saveData(state.data);
-        render();
-        alert("Importado ✅");
-      }catch(e){
-        alert("Archivo inválido ❌");
-      }
-    };
-    reader.readAsText(file);
-  };
-  inp.click();
-}
-
-/** ========= Events ========= */
-daySelect.onchange=()=>{ state.selectedDay=daySelect.value; render(); };
-goTodayBtn.onclick=()=>{ state.selectedDay=dayKeyFromDate(new Date()); daySelect.value=state.selectedDay; render(); };
-
-weeklyReportBtn.onclick=generateWeeklyReport;
-
-exportBtn.onclick=()=>download(`felipe_forero_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state.data,null,2));
-importBtn.onclick=uploadJson;
-
-resetWeekBtn.onclick=()=>{
-  if(confirm("¿Seguro? Esto borra TODOS los datos de esta semana.")){
-    delete state.data[state.weekKey];
-    saveData(state.data);
-    render();
-  }
-};
-
-/** ========= Init ========= */
-(function init(){
-  const splash=document.getElementById("splash");
-  setTimeout(()=>splash.classList.add("hide"), 700);
-
-  const now=new Date();
-  state.weekKey=getWeekKey(now);
-  state.selectedDay=dayKeyFromDate(now);
-  daySelect.value=state.selectedDay;
-  render();
-})();
-</script>
-</body>
-</html>
+diff --git a/!doctype html.txt b/!doctype html.txt
+index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdcce92dc36 100644
+--- a/!doctype html.txt	
++++ b/!doctype html.txt	
+@@ -1,1083 +1,1257 @@
+-<!doctype html>
+-<html lang="es">
+-<head>
+-  <meta charset="utf-8" />
+-  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+-  <title>Felipe Forero</title>
+-
+-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+-
+-  <style>
+-    :root{
+-      --bg:#0b0f14;
+-      --panel:#0f1620;
+-      --panel2:#101b28;
+-      --text:#e7eef9;
+-      --muted:#a7b3c7;
+-      --line:#1f2a3a;
+-      --good:#1bd37a;
+-      --bad:#ff4d6d;
+-      --btn:#172334;
+-      --shadow: 0 10px 30px rgba(0,0,0,.35);
+-      --radius:18px;
+-      --ripple: rgba(231,238,249,.25);
+-      --soft: rgba(255,255,255,.05);
+-    }
+-    *{box-sizing:border-box}
+-    body{
+-      margin:0;
+-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+-      background: radial-gradient(1200px 600px at 10% -10%, rgba(27,211,122,.12), transparent 60%),
+-                  radial-gradient(1000px 500px at 90% 0%, rgba(255,77,109,.10), transparent 55%),
+-                  var(--bg);
+-      color:var(--text);
+-    }
+-
+-    /* Splash */
+-    .splash{
+-      position:fixed; inset:0;
+-      display:flex; align-items:center; justify-content:center;
+-      background: rgba(11,15,20,.92);
+-      backdrop-filter: blur(10px);
+-      z-index:2000;
+-      transition: opacity .35s ease, transform .35s ease;
+-    }
+-    .splash.hide{opacity:0; pointer-events:none; transform: scale(1.01)}
+-    .brand{display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;}
+-    .logo{
+-      width:64px; height:64px; border-radius:18px;
+-      border:1px solid rgba(31,42,58,.9);
+-      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
+-      display:grid; place-items:center;
+-      box-shadow: var(--shadow);
+-      position:relative; overflow:hidden;
+-    }
+-    .logo::before{
+-      content:"";
+-      position:absolute; inset:-40%;
+-      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
+-      animation: spin 1.4s linear infinite;
+-      filter: blur(1px);
+-      opacity:.85;
+-    }
+-    .logo span{
+-      position:relative;
+-      font-weight:900;
+-      letter-spacing:.5px;
+-      font-size:18px;
+-      padding:10px 12px;
+-      border-radius:12px;
+-      background: rgba(11,15,20,.8);
+-      border:1px solid rgba(31,42,58,.75);
+-    }
+-    .subtitle{color:var(--muted); font-size:12px; letter-spacing:.2px;}
+-    .loadingbar{
+-      width:220px; height:10px;
+-      border-radius:999px;
+-      border:1px solid rgba(31,42,58,.85);
+-      background: rgba(16,27,40,.55);
+-      overflow:hidden;
+-    }
+-    .loadingbar .fill{
+-      height:100%;
+-      width:35%;
+-      border-radius:999px;
+-      background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(255,77,109,.65));
+-      animation: loadmove 1.05s ease-in-out infinite;
+-    }
+-    @keyframes loadmove{0%{transform: translateX(-40%)}50%{transform: translateX(120%)}100%{transform: translateX(-40%)}}
+-    @keyframes spin{to{transform: rotate(360deg)}}
+-
+-    header{
+-      padding:18px 18px 8px;
+-      position:sticky; top:0;
+-      backdrop-filter: blur(10px);
+-      background: linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.65));
+-      border-bottom:1px solid rgba(31,42,58,.5);
+-      z-index:50;
+-    }
+-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+-    .toprow{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+-    h1{font-size:18px;margin:0;letter-spacing:.2px;display:flex; gap:10px; align-items:center;}
+-    .badge{
+-      font-size:12px; padding:6px 10px;
+-      border:1px solid rgba(31,42,58,.8);
+-      border-radius:999px;
+-      color:var(--muted);
+-      background: rgba(16,27,40,.6);
+-      display:inline-flex; gap:8px; align-items:center;
+-    }
+-    .badge strong{color:var(--text)}
+-    .daynav{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+-    select, button, input, textarea{
+-      font:inherit; color:var(--text);
+-      background: var(--btn);
+-      border:1px solid rgba(31,42,58,.9);
+-      border-radius:12px;
+-      padding:10px 12px;
+-      outline:none;
+-    }
+-    button{cursor:pointer}
+-    button:hover{filter:brightness(1.08)}
+-    button:active{transform:translateY(1px)}
+-    .ghost{background:transparent}
+-
+-    .grid{display:grid; grid-template-columns: 1.25fr .75fr; gap:14px;}
+-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+-    .card{
+-      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
+-      border:1px solid rgba(31,42,58,.85);
+-      border-radius: var(--radius);
+-      box-shadow: var(--shadow);
+-      padding:14px;
+-      animation: popin .35s ease both;
+-    }
+-    @keyframes popin{from{opacity:0; transform: translateY(6px)}to{opacity:1; transform: translateY(0)}}
+-    .card h2{margin:0 0 10px;font-size:14px;color:var(--muted);letter-spacing:.25px;text-transform:uppercase;}
+-
+-    .tasks{display:flex; flex-direction:column; gap:10px}
+-    .task{
+-      border:1px solid rgba(31,42,58,.8);
+-      border-radius:16px;
+-      background: rgba(16,27,40,.55);
+-      padding:12px;
+-      transition: transform .18s ease, border-color .18s ease, opacity .18s ease, background .18s ease, box-shadow .18s ease;
+-      position:relative;
+-    }
+-    .task:hover{transform: translateY(-1px); border-color: rgba(80,95,120,.85)}
+-
+-    /* Tachado (cuando ya está marcada) */
+-    .task.completed{
+-      opacity:.88;
+-      border-color: rgba(80,95,120,.55);
+-    }
+-    .task.completed::after{
+-      content:"";
+-      position:absolute; inset:0;
+-      background: linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+-      border-radius:16px;
+-      pointer-events:none;
+-    }
+-    .task.completed .tasktitle b{
+-      text-decoration: line-through;
+-      text-decoration-thickness: 2px;
+-      text-decoration-color: rgba(231,238,249,.35);
+-    }
+-
+-    /* ✅/❌ Color por estado */
+-    .task.done{
+-      border-color: rgba(27,211,122,.55);
+-      box-shadow: 0 0 0 1px rgba(27,211,122,.10) inset, 0 12px 30px rgba(0,0,0,.25);
+-      background: linear-gradient(180deg, rgba(27,211,122,.08), rgba(16,27,40,.55));
+-    }
+-    .task.missed{
+-      border-color: rgba(255,77,109,.55);
+-      box-shadow: 0 0 0 1px rgba(255,77,109,.10) inset, 0 12px 30px rgba(0,0,0,.25);
+-      background: linear-gradient(180deg, rgba(255,77,109,.08), rgba(16,27,40,.55));
+-    }
+-
+-    .taskhead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+-    .tasktitle{display:flex; flex-direction:column; gap:4px}
+-    .tasktitle b{font-size:16px}
+-    .taskmeta{font-size:12px;color:var(--muted)}
+-    .bigbtns{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+-
+-    .bigbtn{
+-      position:relative; overflow:hidden;
+-      padding:12px 14px;
+-      border-radius:14px;
+-      min-width:130px;
+-      font-weight:900;
+-      letter-spacing:.2px;
+-      border:1px solid rgba(31,42,58,.85);
+-      background: #152235;
+-      transition: transform .12s ease, filter .12s ease, box-shadow .2s ease, opacity .2s ease;
+-    }
+-    .bigbtn:active{transform: scale(.98)}
+-    .bigbtn.good{border-color:rgba(27,211,122,.6); box-shadow:0 0 0 1px rgba(27,211,122,.12) inset}
+-    .bigbtn.bad{border-color:rgba(255,77,109,.6); box-shadow:0 0 0 1px rgba(255,77,109,.12) inset}
+-    .bigbtn.neutral{border-color: rgba(167,179,199,.35); background: rgba(21,34,53,.55);}
+-    .bigbtn.pulse{animation: pulse .22s ease}
+-    @keyframes pulse{0%{transform: scale(.98)}60%{transform: scale(1.03)}100%{transform: scale(1)}}
+-    .ripple{
+-      position:absolute; border-radius:999px;
+-      transform: scale(0);
+-      background: var(--ripple);
+-      animation: rip .55s ease-out;
+-      pointer-events:none;
+-      mix-blend-mode: screen;
+-    }
+-    @keyframes rip{to{transform: scale(10); opacity:0}}
+-
+-    .bigbtn[disabled]{opacity:.55; cursor:not-allowed; filter:saturate(.8)}
+-    .statuspill{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-top:8px;}
+-    .dot{width:9px;height:9px;border-radius:999px;background:#55657d}
+-    .dot.good{background:var(--good)}
+-    .dot.bad{background:var(--bad)}
+-    .dot.na{background:#55657d}
+-
+-    .kpis{display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:6px;}
+-    @media (max-width: 520px){ .kpis{grid-template-columns:1fr} }
+-    .kpi{background: rgba(16,27,40,.55); border:1px solid rgba(31,42,58,.8); border-radius:16px; padding:12px;}
+-    .kpi .label{font-size:12px;color:var(--muted)}
+-    .kpi .value{font-size:20px;font-weight:900;margin-top:6px}
+-    .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}
+-    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+-    .row{
+-      display:flex; align-items:center; justify-content:space-between; gap:10px;
+-      border:1px solid rgba(31,42,58,.75);
+-      border-radius:14px;
+-      padding:10px 12px;
+-      background: rgba(16,27,40,.45);
+-      color:var(--text);
+-    }
+-    .row small{color:var(--muted)}
+-    .bar{height:10px; background: rgba(31,42,58,.7); border-radius:999px; overflow:hidden; width:44%; border:1px solid rgba(31,42,58,.85);}
+-    .fill{height:100%; width:0%; background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(27,211,122,.65));}
+-
+-    .modalback{
+-      position:fixed; inset:0;
+-      background: rgba(0,0,0,.55);
+-      display:none;
+-      align-items:center; justify-content:center;
+-      z-index:1000;
+-      padding:18px;
+-    }
+-    .modal{
+-      width:min(900px, 100%);
+-      background: linear-gradient(180deg, rgba(15,22,32,.98), rgba(15,22,32,.88));
+-      border:1px solid rgba(31,42,58,.9);
+-      border-radius:22px;
+-      box-shadow: var(--shadow);
+-      padding:14px;
+-      transform: translateY(10px);
+-      opacity:0;
+-      animation: modalIn .22s ease forwards;
+-      position:relative; overflow:hidden;
+-    }
+-    @keyframes modalIn{to{transform: translateY(0); opacity:1}}
+-    .modalheader{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(31,42,58,.6); padding-bottom:10px; margin-bottom:10px;}
+-    .modalheader h3{margin:0; font-size:16px}
+-    .modalheader p{margin:4px 0 0; color:var(--muted); font-size:12px}
+-    .closebtn{background:transparent}
+-    .cols{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+-    @media (max-width: 840px){ .cols{grid-template-columns:1fr} }
+-    .subcard{border:1px solid rgba(31,42,58,.8); border-radius:18px; background: rgba(16,27,40,.55); padding:12px; position:relative;}
+-    .subcard h4{margin:0 0 10px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.2px}
+-    .check{display:flex; gap:10px; align-items:flex-start; padding:8px 8px; border-radius:12px;}
+-    .check:hover{background: rgba(255,255,255,.03)}
+-    .check input{margin-top:2px; transform: scale(1.1)}
+-    textarea{
+-      width:100%; min-height:120px; resize:vertical;
+-      background: rgba(11,15,20,.45);
+-      border:1px solid rgba(31,42,58,.9);
+-      border-radius:14px;
+-      padding:10px 12px;
+-      color:var(--text);
+-    }
+-    .modalfooter{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; border-top:1px solid rgba(31,42,58,.6); padding-top:10px;}
+-    .danger{border-color: rgba(255,77,109,.6)}
+-    .ok{border-color: rgba(27,211,122,.6)}
+-    .mini{padding:8px 10px; border-radius:12px; font-size:12px}
+-    .hint{font-size:12px;color:var(--muted)}
+-
+-    .modalLoader{
+-      position:absolute; inset:0;
+-      background: rgba(11,15,20,.75);
+-      display:flex; align-items:center; justify-content:center;
+-      backdrop-filter: blur(8px);
+-      z-index:2;
+-      opacity:0; pointer-events:none;
+-      transition: opacity .18s ease;
+-    }
+-    .modalLoader.show{opacity:1; pointer-events:auto}
+-    .loaderMini{
+-      display:flex; flex-direction:column; align-items:center; gap:10px;
+-      padding:14px 16px;
+-      border-radius:18px;
+-      border:1px solid rgba(31,42,58,.85);
+-      background: rgba(15,22,32,.85);
+-      box-shadow: var(--shadow);
+-    }
+-    .loaderMini .ff{
+-      width:44px;height:44px;border-radius:14px;
+-      border:1px solid rgba(31,42,58,.85);
+-      display:grid; place-items:center;
+-      font-weight:900;
+-      background: rgba(11,15,20,.75);
+-      position:relative; overflow:hidden;
+-    }
+-    .loaderMini .ff::before{
+-      content:"";
+-      position:absolute; inset:-50%;
+-      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
+-      animation: spin 1.2s linear infinite;
+-    }
+-    .loaderMini .ff span{position:relative; z-index:2;}
+-
+-    .links{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+-    .links a{
+-      text-decoration:none; color: var(--text);
+-      border:1px solid rgba(31,42,58,.75);
+-      background: rgba(16,27,40,.45);
+-      padding:10px 12px;
+-      border-radius:14px;
+-      transition: transform .12s ease, filter .12s ease;
+-    }
+-    .links a:hover{filter: brightness(1.08)}
+-    .links a:active{transform: translateY(1px)}
+-    .links a small{display:block; color:var(--muted); margin-top:3px}
+-
+-    .report{
+-      margin-top:12px;
+-      border:1px solid rgba(31,42,58,.8);
+-      border-radius:16px;
+-      background: rgba(16,27,40,.45);
+-      padding:12px;
+-      white-space: pre-wrap;
+-      line-height:1.35;
+-      font-size:13px;
+-      color: var(--text);
+-    }
+-  </style>
+-</head>
+-
+-<body>
+-  <div class="splash" id="splash">
+-    <div class="brand">
+-      <div class="logo"><span>FF</span></div>
+-      <div style="font-weight:900; letter-spacing:.2px">Felipe Forero</div>
+-      <div class="subtitle">Music First • disciplina • estadísticas</div>
+-      <div class="loadingbar"><div class="fill"></div></div>
+-    </div>
+-  </div>
+-
+-<header>
+-  <div class="wrap">
+-    <div class="toprow">
+-      <h1>Felipe Forero <span class="badge"><strong>Music First</strong> • simple • medible</span></h1>
+-
+-      <div class="daynav">
+-        <span class="badge" id="todayLabel">Hoy</span>
+-
+-        <select id="daySelect" title="Cambiar día">
+-          <option value="mon">Lunes</option>
+-          <option value="tue">Martes</option>
+-          <option value="wed">Miércoles</option>
+-          <option value="thu">Jueves</option>
+-          <option value="fri">Viernes</option>
+-          <option value="sat">Sábado</option>
+-          <option value="sun">Domingo</option>
+-        </select>
+-
+-        <button id="goTodayBtn" class="ghost">Ir a hoy</button>
+-        <button id="weeklyReportBtn" class="ghost">Informe semanal</button>
+-        <button id="exportBtn" class="ghost">Exportar</button>
+-        <button id="importBtn" class="ghost">Importar</button>
+-        <button id="resetWeekBtn" class="ghost danger">Reset semana</button>
+-      </div>
+-    </div>
+-  </div>
+-</header>
+-
+-<div class="wrap">
+-  <div class="grid">
+-    <section class="card">
+-      <h2>Tareas del día</h2>
+-      <div class="tasks" id="tasks"></div>
+-      <div class="hint" style="margin-top:10px">
+-        Música tiene 2 niveles: mínima (30min) o profunda (2h+). Marca una.
+-      </div>
+-      <div class="report" id="reportBox" style="display:none"></div>
+-    </section>
+-
+-    <aside class="card">
+-      <h2>Estadísticas</h2>
+-
+-      <div class="kpis">
+-        <div class="kpi">
+-          <div class="label">% de hoy</div>
+-          <div class="value" id="kpiToday">0%</div>
+-          <div class="sub" id="kpiTodaySub">0/0 tareas</div>
+-        </div>
+-        <div class="kpi">
+-          <div class="label">% semana</div>
+-          <div class="value" id="kpiWeek">0%</div>
+-          <div class="sub" id="kpiWeekSub">0/0 tareas</div>
+-        </div>
+-        <div class="kpi">
+-          <div class="label">Racha Música</div>
+-          <div class="value" id="kpiStreak">0</div>
+-          <div class="sub" id="kpiStreakSub">días seguidos</div>
+-        </div>
+-      </div>
+-
+-      <div style="margin-top:12px">
+-        <canvas id="weekChart" height="170"></canvas>
+-      </div>
+-
+-      <div class="list" id="byGoalList"></div>
+-    </aside>
+-  </div>
+-</div>
+-
+-<div class="modalback" id="modalBack" role="dialog" aria-modal="true">
+-  <div class="modal" id="modal">
+-    <div class="modalLoader" id="modalLoader">
+-      <div class="loaderMini">
+-        <div class="ff"><span>FF</span></div>
+-        <div class="subtitle">cargando…</div>
+-      </div>
+-    </div>
+-
+-    <div class="modalheader">
+-      <div>
+-        <h3 id="modalTitle">Tarea</h3>
+-        <p id="modalMeta">Subtareas</p>
+-      </div>
+-      <button class="closebtn" id="closeModalBtn">Cerrar ✕</button>
+-    </div>
+-
+-    <div class="cols">
+-      <div class="subcard">
+-        <h4>Subtareas</h4>
+-        <div id="subtasks"></div>
+-
+-        <h4 style="margin-top:12px">Tutoriales</h4>
+-        <div class="links" id="tutorialLinks"></div>
+-      </div>
+-
+-      <div class="subcard">
+-        <h4>Notas (opcional)</h4>
+-        <textarea id="notes" placeholder="Qué hiciste, qué aprendiste, links, ideas, etc."></textarea>
+-        <div class="hint" style="margin-top:8px">
+-          Tip: aquí escribe tu mini log de música (ideas, hooks, demos).
+-        </div>
+-      </div>
+-    </div>
+-
+-    <div class="modalfooter">
+-      <div class="hint" id="modalHint">Se guarda automáticamente.</div>
+-      <div style="display:flex; gap:10px; flex-wrap:wrap">
+-        <button id="clearTaskBtn" class="mini danger">Borrar estado</button>
+-        <button id="saveCloseBtn" class="mini ok">Guardar y cerrar</button>
+-      </div>
+-    </div>
+-  </div>
+-</div>
+-
+-<script>
+-/** ========= Tutorials ========= */
+-const TUTORIALS = {
+-  musica: [
+-    { title:"Ableton Live for Beginners (playlist)", url:"https://www.youtube.com/playlist?list=PLoO2tOP2r-XsXH0lybWl9zMvYp3lpLF46", note:"Producción desde cero" },
+-    { title:"Compresión (cómo usarla bien)", url:"https://www.youtube.com/watch?v=yi0J9JsRdI4", note:"Mixing / compresión" }
+-  ],
+-  edicion: [
+-    { title:"DaVinci Resolve Full Course (Beginners)", url:"https://www.youtube.com/watch?v=MCDVcQIA3UM", note:"Curso completo" }
+-  ],
+-  foto: [
+-    { title:"Photography playlist (Tony & Chelsea)", url:"https://www.youtube.com/playlist?list=PLNwO5t7U7k7CWJlE3PmgtZ7Dmuy6B-HtO", note:"Fundamentos" }
+-  ],
+-  animacion: [
+-    { title:"12 Principles of Animation (Alan Becker)", url:"https://www.youtube.com/watch?v=uDqjIdI4bF4", note:"Serie de los 12 principios" }
+-  ],
+-  tatuar: [
+-    { title:"Tattooing 101 (canal)", url:"https://www.youtube.com/c/Tattooing101", note:"Educación estructurada" }
+-  ],
+-  skate: [
+-    { title:"How to Ollie for Beginners (Braille)", url:"https://www.youtube.com/watch?v=2m95ftcaJRw", note:"Ollie desde cero" }
+-  ],
+-  italiano: [
+-    { title:"LearnAmo playlists", url:"https://www.youtube.com/c/LearnAmo/playlists", note:"Italiano A1–B1" }
+-  ]
+-};
+-
+-/** ========= Goals + subtasks ========= */
+-const GOALS = {
+-  musica: { name:"Música (diaria)", subtasks:[
+-    "Composición (melodía/letra)","Producción (arreglo/sonido)","Grabación",
+-    "Mezcla (balance/FX)","Export / Demo / Backup","Marketing / Post"
+-  ]},
+-  gym: { name:"Gym / Cuerpo", subtasks:["Fuerza","Cardio 10–20 min","Proteína","Agua + pasos"]},
+-  skate: { name:"Skate", subtasks:["Calentamiento","Técnica","Trucos (objetivo)","Estiramiento"]},
+-  italiano: { name:"Italiano", subtasks:["Vocabulario","Escucha","Hablar","Gramática","Escritura"]},
+-  edicion: { name:"Edición de video (musical)", subtasks:["Organizar","Cortes","Color","Audio/sync","Textos","Export"]},
+-  foto: { name:"Fotografía", subtasks:["Disparar","Composición","Luz","Edición","Portafolio"]},
+-  animacion: { name:"Animación", subtasks:["Ejercicio","Timing","Escena pequeña","Render","Notas"]},
+-  tatuar: { name:"Tatuaje", subtasks:["Teoría (seguridad)","Trazos","Sombras","Diseño","Piel sintética"]},
+-};
+-
+-/** ========= Week plan ========= */
+-const WEEK_PLAN = {
+-  mon: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
+-  tue: [{id:"musica",window:"9:00–12:00",mode:"enfoque"},{id:"foto",window:"15:00–16:30",mode:"creativo"},{id:"gym",window:"18:00–19:00",mode:"físico"}],
+-  wed: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"tatuar",window:"15:00–16:30",mode:"habilidad"},{id:"gym",window:"18:00–19:00",mode:"físico"},{id:"italiano",window:"21:00–21:30",mode:"ligero"}],
+-  thu: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"animacion",window:"21:00–22:00",mode:"técnico"}],
+-  fri: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"skate",window:"15:30–16:30",mode:"físico"}],
+-  sat: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"gym",window:"15:30–16:30",mode:"físico"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
+-  sun: [{id:"musica",window:"9:00–10:00 (ligero)",mode:"ligero"},{id:"skate",window:"15:00–16:00",mode:"físico"},{id:"animacion",window:"20:30–21:30",mode:"técnico"}],
+-};
+-
+-/**
+- * Música ahora tiene 2 niveles.
+- * - musica_min: cuenta como "mínima" (30min)
+- * - musica_deep: cuenta como "profunda" (2h+)
+- */
+-const WEIGHTS = { musica_min:3, musica_deep:5, gym:2, skate:2, italiano:1, edicion:2, foto:2, animacion:2, tatuar:2 };
+-
+-/** ========= Storage ========= */
+-const LS_KEY="felipe_forero_dashboard_v3";
+-function loadData(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
+-function saveData(data){localStorage.setItem(LS_KEY, JSON.stringify(data));}
+-function getWeekKey(date){
+-  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+-  const dayNum=d.getUTCDay()||7;
+-  d.setUTCDate(d.getUTCDate()+4-dayNum);
+-  const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+-  const weekNo=Math.ceil((((d-yearStart)/86400000)+1)/7);
+-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
+-}
+-function dayKeyFromDate(date){
+-  const map=["sun","mon","tue","wed","thu","fri","sat"];
+-  return map[date.getDay()];
+-}
+-function formatDateLabel(date){
+-  return date.toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"short",day:"numeric"});
+-}
+-function ensurePath(obj,path,fallback){
+-  let cur=obj;
+-  for(let i=0;i<path.length;i++){
+-    const k=path[i];
+-    if(cur[k]==null) cur[k]=(i===path.length-1?fallback:{});
+-    cur=cur[k];
+-  }
+-  return cur;
+-}
+-function labelDay(dayKey){
+-  const map={mon:"Lunes",tue:"Martes",wed:"Miércoles",thu:"Jueves",fri:"Viernes",sat:"Sábado",sun:"Domingo"};
+-  return map[dayKey]||dayKey;
+-}
+-
+-/** ========= State + DOM ========= */
+-const state={ selectedDay:null, weekKey:null, data:loadData(), modal:{open:false,goalId:null,dayKey:null} };
+-
+-const tasksEl=document.getElementById("tasks");
+-const daySelect=document.getElementById("daySelect");
+-const todayLabel=document.getElementById("todayLabel");
+-const goTodayBtn=document.getElementById("goTodayBtn");
+-const resetWeekBtn=document.getElementById("resetWeekBtn");
+-const weeklyReportBtn=document.getElementById("weeklyReportBtn");
+-const exportBtn=document.getElementById("exportBtn");
+-const importBtn=document.getElementById("importBtn");
+-
+-const kpiToday=document.getElementById("kpiToday");
+-const kpiTodaySub=document.getElementById("kpiTodaySub");
+-const kpiWeek=document.getElementById("kpiWeek");
+-const kpiWeekSub=document.getElementById("kpiWeekSub");
+-const kpiStreak=document.getElementById("kpiStreak");
+-const kpiStreakSub=document.getElementById("kpiStreakSub");
+-const byGoalList=document.getElementById("byGoalList");
+-const reportBox=document.getElementById("reportBox");
+-
+-const modalBack=document.getElementById("modalBack");
+-const closeModalBtn=document.getElementById("closeModalBtn");
+-const saveCloseBtn=document.getElementById("saveCloseBtn");
+-const clearTaskBtn=document.getElementById("clearTaskBtn");
+-const modalTitle=document.getElementById("modalTitle");
+-const modalMeta=document.getElementById("modalMeta");
+-const subtasksEl=document.getElementById("subtasks");
+-const notesEl=document.getElementById("notes");
+-const tutorialLinks=document.getElementById("tutorialLinks");
+-const modalLoader=document.getElementById("modalLoader");
+-
+-let chart=null;
+-
+-/** ========= Ripple helper ========= */
+-function ripple(btn,event){
+-  const r=document.createElement("span");
+-  r.className="ripple";
+-  const rect=btn.getBoundingClientRect();
+-  const size=Math.max(rect.width,rect.height);
+-  r.style.width=r.style.height=size+"px";
+-  const x=(event.clientX-rect.left)-(size/2);
+-  const y=(event.clientY-rect.top)-(size/2);
+-  r.style.left=x+"px"; r.style.top=y+"px";
+-  btn.appendChild(r);
+-  setTimeout(()=>r.remove(),600);
+-  btn.classList.remove("pulse"); void btn.offsetWidth; btn.classList.add("pulse");
+-}
+-
+-/** ========= Records ========= */
+-function getRecord(weekKey, dayKey, goalId){
+-  const week=ensurePath(state.data,[weekKey],{});
+-  const day=ensurePath(week,[dayKey],{});
+-  const rec=ensurePath(day,[goalId],{status:null,musicLevel:null,subtasks:{},notes:""});
+-  if(rec.subtasks==null) rec.subtasks={};
+-  if(rec.notes==null) rec.notes="";
+-  if(rec.musicLevel==null) rec.musicLevel=null;
+-  return rec;
+-}
+-function setStatus(weekKey, dayKey, goalId, status, musicLevel=null){
+-  const rec=getRecord(weekKey, dayKey, goalId);
+-  rec.status=status;
+-  if(goalId==="musica") rec.musicLevel = musicLevel;
+-  saveData(state.data);
+-  render();
+-}
+-function setSubtask(weekKey, dayKey, goalId, subtaskLabel, value){
+-  const rec=getRecord(weekKey, dayKey, goalId);
+-  rec.subtasks[subtaskLabel]=!!value;
+-  saveData(state.data);
+-}
+-function setNotes(weekKey, dayKey, goalId, notes){
+-  const rec=getRecord(weekKey, dayKey, goalId);
+-  rec.notes=notes;
+-  saveData(state.data);
+-}
+-
+-/** ========= Modal ========= */
+-function openModal(dayKey, goalId){
+-  modalLoader.classList.add("show");
+-  modalBack.style.display="flex";
+-
+-  setTimeout(()=>{
+-    const goal=GOALS[goalId];
+-    const rec=getRecord(state.weekKey, dayKey, goalId);
+-
+-    state.modal={open:true,dayKey,goalId};
+-
+-    modalTitle.textContent=goal.name;
+-    modalMeta.textContent=`${labelDay(dayKey)} • Semana ${state.weekKey}`;
+-
+-    subtasksEl.innerHTML="";
+-    for(const label of (goal.subtasks||[])){
+-      const row=document.createElement("label");
+-      row.className="check";
+-      const cb=document.createElement("input");
+-      cb.type="checkbox";
+-      cb.checked=!!rec.subtasks[label];
+-      cb.onchange=()=>{
+-        setSubtask(state.weekKey, dayKey, goalId, label, cb.checked);
+-        const r=getRecord(state.weekKey, dayKey, goalId);
+-        if(r.status==null){
+-          r.status="yes";
+-          saveData(state.data);
+-          render();
+-        }
+-      };
+-      const span=document.createElement("span");
+-      span.textContent=label;
+-      row.appendChild(cb); row.appendChild(span);
+-      subtasksEl.appendChild(row);
+-    }
+-
+-    notesEl.value=rec.notes||"";
+-    notesEl.oninput=()=>setNotes(state.weekKey, dayKey, goalId, notesEl.value);
+-
+-    tutorialLinks.innerHTML="";
+-    const links=TUTORIALS[goalId]||[];
+-    if(!links.length){
+-      tutorialLinks.innerHTML=`<div class="hint">Sin links aún.</div>`;
+-    }else{
+-      for(const l of links){
+-        const a=document.createElement("a");
+-        a.href=l.url; a.target="_blank"; a.rel="noopener";
+-        a.innerHTML=`<b>${l.title}</b><small>${l.note||""}</small>`;
+-        tutorialLinks.appendChild(a);
+-      }
+-    }
+-
+-    modalLoader.classList.remove("show");
+-  }, 240);
+-}
+-function closeModal(){
+-  state.modal={open:false,goalId:null,dayKey:null};
+-  modalBack.style.display="none";
+-}
+-closeModalBtn.onclick=closeModal;
+-saveCloseBtn.onclick=()=>{saveData(state.data); closeModal(); render();};
+-modalBack.addEventListener("click",(e)=>{ if(e.target===modalBack) closeModal(); });
+-
+-clearTaskBtn.onclick=()=>{
+-  const {dayKey,goalId}=state.modal;
+-  if(!dayKey||!goalId) return;
+-  const rec=getRecord(state.weekKey, dayKey, goalId);
+-  rec.status=null;
+-  rec.musicLevel=null;
+-  rec.subtasks={};
+-  rec.notes="";
+-  saveData(state.data);
+-  closeModal();
+-  render();
+-};
+-
+-/** ========= Stats ========= */
+-function musicWeightFromRec(rec){
+-  if(rec.status!=="yes") return 0;
+-  if(rec.musicLevel==="deep") return WEIGHTS.musica_deep;
+-  if(rec.musicLevel==="min") return WEIGHTS.musica_min;
+-  return WEIGHTS.musica_min;
+-}
+-function computeDayScore(weekKey, dayKey){
+-  const plan=WEEK_PLAN[dayKey]||[];
+-  let got=0,total=0,doneTasks=0,totalTasks=0;
+-
+-  for(const t of plan){
+-    totalTasks++;
+-    if(t.id==="musica"){
+-      total += WEIGHTS.musica_deep;
+-      const rec=getRecord(weekKey, dayKey, "musica");
+-      const w = musicWeightFromRec(rec);
+-      if(w>0){ got += w; doneTasks++; }
+-    }else{
+-      const w=WEIGHTS[t.id]??1;
+-      total += w;
+-      const rec=getRecord(weekKey, dayKey, t.id);
+-      if(rec.status==="yes"){ got += w; doneTasks++; }
+-    }
+-  }
+-  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
+-}
+-function computeWeekScore(weekKey){
+-  const days=["mon","tue","wed","thu","fri","sat","sun"];
+-  let got=0,total=0,doneTasks=0,totalTasks=0;
+-
+-  for(const d of days){
+-    for(const t of (WEEK_PLAN[d]||[])){
+-      totalTasks++;
+-      if(t.id==="musica"){
+-        total += WEIGHTS.musica_deep;
+-        const rec=getRecord(weekKey, d, "musica");
+-        const w = musicWeightFromRec(rec);
+-        if(w>0){ got += w; doneTasks++; }
+-      }else{
+-        const w=WEIGHTS[t.id]??1;
+-        total += w;
+-        const rec=getRecord(weekKey, d, t.id);
+-        if(rec.status==="yes"){ got += w; doneTasks++; }
+-      }
+-    }
+-  }
+-  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
+-}
+-function computeByGoal(weekKey){
+-  const days=["mon","tue","wed","thu","fri","sat","sun"];
+-  const stats={};
+-  for(const gid of Object.keys(GOALS)) stats[gid]={scheduled:0,done:0,pct:0};
+-
+-  for(const d of days){
+-    for(const t of (WEEK_PLAN[d]||[])){
+-      stats[t.id].scheduled++;
+-      const rec=getRecord(weekKey, d, t.id);
+-      if(t.id==="musica"){
+-        if(rec.status==="yes") stats[t.id].done++;
+-      }else{
+-        if(rec.status==="yes") stats[t.id].done++;
+-      }
+-    }
+-  }
+-  for(const gid of Object.keys(stats)){
+-    const s=stats[gid];
+-    s.pct = s.scheduled?Math.round((s.done/s.scheduled)*100):0;
+-  }
+-  return stats;
+-}
+-function computeMusicStreakToToday(weekKey){
+-  const days=["mon","tue","wed","thu","fri","sat","sun"];
+-  const todayKey=dayKeyFromDate(new Date());
+-  let upto=0;
+-  for(const d of days){
+-    const rec=getRecord(weekKey, d, "musica");
+-    if(rec.status==="yes") upto++;
+-    else upto=0;
+-    if(d===todayKey) break;
+-  }
+-  return upto;
+-}
+-function renderChart(){
+-  if(!window.Chart) return;
+-  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+-  const days=["mon","tue","wed","thu","fri","sat","sun"];
+-  const values=days.map(d=>computeDayScore(state.weekKey,d).pct);
+-  const ctx=document.getElementById("weekChart");
+-  if(chart) chart.destroy();
+-  chart=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"% por día",data:values,tension:0.35}]},
+-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"}}}}
+-  });
+-}
+-function renderStats(){
+-  const day=state.selectedDay;
+-  const d=computeDayScore(state.weekKey, day);
+-  kpiToday.textContent=d.pct+"%";
+-  kpiTodaySub.textContent=`${d.doneTasks}/${d.totalTasks} tareas`;
+-
+-  const w=computeWeekScore(state.weekKey);
+-  kpiWeek.textContent=w.pct+"%";
+-  kpiWeekSub.textContent=`${w.doneTasks}/${w.totalTasks} tareas`;
+-
+-  const streak=computeMusicStreakToToday(state.weekKey);
+-  kpiStreak.textContent=String(streak);
+-  kpiStreakSub.textContent="días seguidos (hasta hoy)";
+-
+-  const byGoal=computeByGoal(state.weekKey);
+-  byGoalList.innerHTML="";
+-  const title=document.createElement("h2");
+-  title.textContent="Por objetivo (semana)";
+-  byGoalList.appendChild(title);
+-
+-  const entries=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>b[1].pct-a[1].pct);
+-  for(const [gid,s] of entries){
+-    const r=document.createElement("div"); r.className="row";
+-    const left=document.createElement("div");
+-    left.innerHTML=`<div><b>${GOALS[gid]?.name||gid}</b></div><small>${s.done}/${s.scheduled} cumplidas</small>`;
+-    const bar=document.createElement("div"); bar.className="bar";
+-    const fill=document.createElement("div"); fill.className="fill"; fill.style.width=`${s.pct}%`;
+-    bar.appendChild(fill);
+-    const right=document.createElement("div"); right.innerHTML=`<b>${s.pct}%</b>`;
+-    r.appendChild(left); r.appendChild(bar); r.appendChild(right);
+-    byGoalList.appendChild(r);
+-  }
+-
+-  renderChart();
+-}
+-
+-/** ========= Weekly report ========= */
+-function generateWeeklyReport(){
+-  const byGoal=computeByGoal(state.weekKey);
+-  const week=computeWeekScore(state.weekKey);
+-
+-  const sorted=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>a[1].pct-b[1].pct);
+-  const bottom=sorted.slice(0,3);
+-  const top=sorted.slice(-2).reverse();
+-
+-  const days=["mon","tue","wed","thu","fri","sat","sun"];
+-  const missedMusic = days.filter(d=>getRecord(state.weekKey,d,"musica").status!=="yes").map(labelDay);
+-
+-  const recs=[];
+-  for(const [gid,_] of bottom){
+-    if(gid==="musica"){
+-      recs.push("Música: mínimo 30 min SIEMPRE. Si estás cansado, haz ‘mínima’ y listo.");
+-    }else if(gid==="italiano"){
+-      recs.push("Italiano: micro-sesión diaria (10–15 min). No la pongas solo cuando tengas energía.");
+-    }else if(gid==="edicion"){
+-      recs.push("Edición: haz 1 paso fijo (solo cortes + export). Evita el perfeccionismo.");
+-    }else if(gid==="gym"){
+-      recs.push("Cuerpo: si no hay gym, reemplaza por caminata + flexiones 15 min.");
+-    }else if(gid==="skate"){
+-      recs.push("Skate: 20–30 min técnica + 1 truco objetivo, mejor que 0.");
+-    }else{
+-      recs.push(`${GOALS[gid].name}: reduce el alcance (1 ejercicio corto por sesión).`);
+-    }
+-  }
+-
+-  const text =
+-`📌 INFORME SEMANAL — ${state.weekKey}
+-
+-✅ Cumplimiento general: ${week.pct}% (${week.doneTasks}/${week.totalTasks} tareas)
+-
+-⭐ Lo mejor:
+-${top.map(([gid,s])=>`- ${GOALS[gid].name}: ${s.pct}%`).join("\n") || "- (sin datos)"}
+-
+-⚠️ Lo más flojo:
+-${bottom.map(([gid,s])=>`- ${GOALS[gid].name}: ${s.pct}%`).join("\n") || "- (sin datos)"}
+-
+-🎵 Música (días sin cumplir):
+-${missedMusic.length ? "- " + missedMusic.join(", ") : "- Perfecto. Cadena intacta."}
+-
+-🎯 Recomendaciones directas:
+-${recs.map(r=>`- ${r}`).join("\n")}
+-`;
+-
+-  reportBox.style.display="block";
+-  reportBox.textContent=text;
+-  reportBox.scrollIntoView({behavior:"smooth", block:"start"});
+-}
+-
+-/** ========= Render tasks ========= */
+-function render(){
+-  todayLabel.textContent = "Hoy: " + formatDateLabel(new Date());
+-  tasksEl.innerHTML="";
+-  reportBox.style.display="none";
+-
+-  const day=state.selectedDay;
+-  const plan=WEEK_PLAN[day]||[];
+-
+-  for(const item of plan){
+-    const goalId=item.id;
+-    const goal=GOALS[goalId];
+-    const rec=getRecord(state.weekKey, day, goalId);
+-    const status=rec.status;
+-
+-    // ✅/❌ color por estado + tachado
+-    let cls="task";
+-    if(status!=null) cls += " completed";
+-    if(status==="yes") cls += " done";
+-    if(status==="no") cls += " missed";
+-
+-    const task=document.createElement("div");
+-    task.className=cls;
+-
+-    const head=document.createElement("div");
+-    head.className="taskhead";
+-
+-    const title=document.createElement("div");
+-    title.className="tasktitle";
+-
+-    const b=document.createElement("b");
+-    b.textContent=goal.name;
+-
+-    const meta=document.createElement("div");
+-    meta.className="taskmeta";
+-
+-    if(goalId==="musica" && status==="yes"){
+-      const level = rec.musicLevel==="deep" ? "profunda (2h+)" : "mínima (30m)";
+-      meta.textContent=`${item.window} • ${item.mode} • ✅ ${level}`;
+-    }else{
+-      meta.textContent=`${item.window} • ${item.mode}`;
+-    }
+-
+-    title.appendChild(b);
+-    title.appendChild(meta);
+-
+-    const btns=document.createElement("div");
+-    btns.className="bigbtns";
+-
+-    if(goalId==="musica"){
+-      const minBtn=document.createElement("button");
+-      minBtn.className="bigbtn good";
+-      minBtn.textContent="✅ Mínima (30m)";
+-      minBtn.disabled = status!=null;
+-      minBtn.onclick=(e)=>{ ripple(minBtn,e); setStatus(state.weekKey, day, "musica", "yes", "min"); openModal(day,"musica"); };
+-
+-      const deepBtn=document.createElement("button");
+-      deepBtn.className="bigbtn good";
+-      deepBtn.textContent="🔥 Profunda (2h+)";
+-      deepBtn.disabled = status!=null;
+-      deepBtn.onclick=(e)=>{ ripple(deepBtn,e); setStatus(state.weekKey, day, "musica", "yes", "deep"); openModal(day,"musica"); };
+-
+-      const noBtn=document.createElement("button");
+-      noBtn.className="bigbtn bad";
+-      noBtn.textContent="❌ No";
+-      noBtn.disabled = status!=null;
+-      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, "musica", "no", null); openModal(day,"musica"); };
+-
+-      if(status!=null){
+-        const editBtn=document.createElement("button");
+-        editBtn.className="bigbtn neutral";
+-        editBtn.textContent="✏️ Editar";
+-        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day,"musica"); };
+-        btns.appendChild(editBtn);
+-      }else{
+-        btns.appendChild(minBtn);
+-        btns.appendChild(deepBtn);
+-        btns.appendChild(noBtn);
+-      }
+-    }else{
+-      const yesBtn=document.createElement("button");
+-      yesBtn.className="bigbtn good";
+-      yesBtn.textContent="✅ Cumplí";
+-      yesBtn.disabled = status!=null;
+-      yesBtn.onclick=(e)=>{ ripple(yesBtn,e); setStatus(state.weekKey, day, goalId, "yes"); openModal(day, goalId); };
+-
+-      const noBtn=document.createElement("button");
+-      noBtn.className="bigbtn bad";
+-      noBtn.textContent="❌ No";
+-      noBtn.disabled = status!=null;
+-      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, goalId, "no"); openModal(day, goalId); };
+-
+-      if(status!=null){
+-        const editBtn=document.createElement("button");
+-        editBtn.className="bigbtn neutral";
+-        editBtn.textContent="✏️ Editar";
+-        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day, goalId); };
+-        btns.appendChild(editBtn);
+-      }else{
+-        btns.appendChild(yesBtn);
+-        btns.appendChild(noBtn);
+-      }
+-    }
+-
+-    head.appendChild(title);
+-    head.appendChild(btns);
+-
+-    const pill=document.createElement("div");
+-    pill.className="statuspill";
+-    const dot=document.createElement("span");
+-    dot.className="dot " + (status==="yes"?"good":status==="no"?"bad":"na");
+-    const text=document.createElement("span");
+-    text.textContent = status==="yes" ? "Marcado como: Cumplí" : status==="no" ? "Marcado como: No" : "Sin marcar";
+-    pill.appendChild(dot); pill.appendChild(text);
+-
+-    task.appendChild(head);
+-    task.appendChild(pill);
+-    tasksEl.appendChild(task);
+-  }
+-
+-  renderStats();
+-}
+-
+-/** ========= Export/Import ========= */
+-function download(filename, text){
+-  const a=document.createElement("a");
+-  a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+-  a.download=filename;
+-  document.body.appendChild(a);
+-  a.click();
+-  a.remove();
+-}
+-function uploadJson(){
+-  const inp=document.createElement("input");
+-  inp.type="file";
+-  inp.accept="application/json";
+-  inp.onchange=()=>{
+-    const file=inp.files[0];
+-    if(!file) return;
+-    const reader=new FileReader();
+-    reader.onload=()=>{
+-      try{
+-        const obj=JSON.parse(String(reader.result||"{}"));
+-        state.data=obj;
+-        saveData(state.data);
+-        render();
+-        alert("Importado ✅");
+-      }catch(e){
+-        alert("Archivo inválido ❌");
+-      }
+-    };
+-    reader.readAsText(file);
+-  };
+-  inp.click();
+-}
+-
+-/** ========= Events ========= */
+-daySelect.onchange=()=>{ state.selectedDay=daySelect.value; render(); };
+-goTodayBtn.onclick=()=>{ state.selectedDay=dayKeyFromDate(new Date()); daySelect.value=state.selectedDay; render(); };
+-
+-weeklyReportBtn.onclick=generateWeeklyReport;
+-
+-exportBtn.onclick=()=>download(`felipe_forero_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state.data,null,2));
+-importBtn.onclick=uploadJson;
+-
+-resetWeekBtn.onclick=()=>{
+-  if(confirm("¿Seguro? Esto borra TODOS los datos de esta semana.")){
+-    delete state.data[state.weekKey];
+-    saveData(state.data);
+-    render();
+-  }
+-};
+-
+-/** ========= Init ========= */
+-(function init(){
+-  const splash=document.getElementById("splash");
+-  setTimeout(()=>splash.classList.add("hide"), 700);
+-
+-  const now=new Date();
+-  state.weekKey=getWeekKey(now);
+-  state.selectedDay=dayKeyFromDate(now);
+-  daySelect.value=state.selectedDay;
+-  render();
+-})();
+-</script>
+-</body>
+-</html>
+\ No newline at end of file
++<!doctype html>
++<html lang="es">
++<head>
++  <meta charset="utf-8" />
++  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
++  <title>Felipe Forero</title>
++
++  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
++
++  <style>
++    :root{
++      --bg:#0b0f14;
++      --panel:#0f1620;
++      --panel2:#101b28;
++      --text:#e7eef9;
++      --muted:#a7b3c7;
++      --line:#1f2a3a;
++      --good:#1bd37a;
++      --bad:#ff4d6d;
++      --btn:#172334;
++      --shadow: 0 10px 30px rgba(0,0,0,.35);
++      --radius:18px;
++      --ripple: rgba(231,238,249,.25);
++      --soft: rgba(255,255,255,.05);
++    }
++    *{box-sizing:border-box}
++    body{
++      margin:0;
++      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
++      background: radial-gradient(1200px 600px at 10% -10%, rgba(27,211,122,.12), transparent 60%),
++                  radial-gradient(1000px 500px at 90% 0%, rgba(255,77,109,.10), transparent 55%),
++                  var(--bg);
++      color:var(--text);
++    }
++
++    /* Splash */
++    .splash{
++      position:fixed; inset:0;
++      display:flex; align-items:center; justify-content:center;
++      background: rgba(11,15,20,.92);
++      backdrop-filter: blur(10px);
++      z-index:2000;
++      transition: opacity .35s ease, transform .35s ease;
++    }
++    .splash.hide{opacity:0; pointer-events:none; transform: scale(1.01)}
++    .brand{display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;}
++    .logo{
++      width:64px; height:64px; border-radius:18px;
++      border:1px solid rgba(31,42,58,.9);
++      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
++      display:grid; place-items:center;
++      box-shadow: var(--shadow);
++      position:relative; overflow:hidden;
++    }
++    .logo::before{
++      content:"";
++      position:absolute; inset:-40%;
++      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
++      animation: spin 1.4s linear infinite;
++      filter: blur(1px);
++      opacity:.85;
++    }
++    .logo span{
++      position:relative;
++      font-weight:900;
++      letter-spacing:.5px;
++      font-size:18px;
++      padding:10px 12px;
++      border-radius:12px;
++      background: rgba(11,15,20,.8);
++      border:1px solid rgba(31,42,58,.75);
++    }
++    .subtitle{color:var(--muted); font-size:12px; letter-spacing:.2px;}
++    .loadingbar{
++      width:220px; height:10px;
++      border-radius:999px;
++      border:1px solid rgba(31,42,58,.85);
++      background: rgba(16,27,40,.55);
++      overflow:hidden;
++    }
++    .loadingbar .fill{
++      height:100%;
++      width:35%;
++      border-radius:999px;
++      background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(255,77,109,.65));
++      animation: loadmove 1.05s ease-in-out infinite;
++    }
++    @keyframes loadmove{0%{transform: translateX(-40%)}50%{transform: translateX(120%)}100%{transform: translateX(-40%)}}
++    @keyframes spin{to{transform: rotate(360deg)}}
++
++    header{
++      padding:18px 18px 8px;
++      position:sticky; top:0;
++      backdrop-filter: blur(10px);
++      background: linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.65));
++      border-bottom:1px solid rgba(31,42,58,.5);
++      z-index:50;
++    }
++    .wrap{max-width:1100px;margin:0 auto;padding:18px}
++    .toprow{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
++    h1{font-size:18px;margin:0;letter-spacing:.2px;display:flex; gap:10px; align-items:center;}
++    .badge{
++      font-size:12px; padding:6px 10px;
++      border:1px solid rgba(31,42,58,.8);
++      border-radius:999px;
++      color:var(--muted);
++      background: rgba(16,27,40,.6);
++      display:inline-flex; gap:8px; align-items:center;
++    }
++    .badge strong{color:var(--text)}
++    .daynav{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
++    select, button, input, textarea{
++      font:inherit; color:var(--text);
++      background: var(--btn);
++      border:1px solid rgba(31,42,58,.9);
++      border-radius:12px;
++      padding:10px 12px;
++      outline:none;
++    }
++    button{cursor:pointer}
++    button:hover{filter:brightness(1.08)}
++    button:active{transform:translateY(1px)}
++    .ghost{background:transparent}
++
++    .grid{display:grid; grid-template-columns: 1.25fr .75fr; gap:14px;}
++    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
++    .card{
++      background: linear-gradient(180deg, rgba(15,22,32,.92), rgba(15,22,32,.72));
++      border:1px solid rgba(31,42,58,.85);
++      border-radius: var(--radius);
++      box-shadow: var(--shadow);
++      padding:14px;
++      animation: popin .35s ease both;
++    }
++    @keyframes popin{from{opacity:0; transform: translateY(6px)}to{opacity:1; transform: translateY(0)}}
++    .card h2{margin:0 0 10px;font-size:14px;color:var(--muted);letter-spacing:.25px;text-transform:uppercase;}
++
++    .tasks{display:flex; flex-direction:column; gap:10px}
++    .task{
++      border:1px solid rgba(31,42,58,.8);
++      border-radius:16px;
++      background: rgba(16,27,40,.55);
++      padding:12px;
++      transition: transform .32s cubic-bezier(.22,1,.36,1), border-color .28s ease, opacity .26s ease, background .28s ease, box-shadow .3s ease;
++      position:relative;
++    }
++    .task:hover{transform: translateY(-2px); border-color: rgba(95,113,141,.9)}
++
++    /* Tachado (cuando ya está marcada) */
++    .task.completed{
++      opacity:.88;
++      border-color: rgba(80,95,120,.55);
++    }
++    .task.completed::after{
++      content:"";
++      position:absolute; inset:0;
++      background: linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
++      border-radius:16px;
++      pointer-events:none;
++    }
++    .task.completed .tasktitle b{
++      text-decoration: line-through;
++      text-decoration-thickness: 2px;
++      text-decoration-color: rgba(231,238,249,.35);
++    }
++
++    /* ✅/❌ Color por estado */
++    .task.done{
++      border-color: rgba(27,211,122,.55);
++      box-shadow: 0 0 0 1px rgba(27,211,122,.10) inset, 0 12px 30px rgba(0,0,0,.25);
++      background: linear-gradient(180deg, rgba(27,211,122,.08), rgba(16,27,40,.55));
++    }
++    .task.missed{
++      border-color: rgba(255,77,109,.55);
++      box-shadow: 0 0 0 1px rgba(255,77,109,.10) inset, 0 12px 30px rgba(0,0,0,.25);
++      background: linear-gradient(180deg, rgba(255,77,109,.08), rgba(16,27,40,.55));
++    }
++
++    .taskhead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
++    .tasktitle{display:flex; flex-direction:column; gap:4px}
++    .tasktitle b{font-size:16px}
++    .taskmeta{font-size:12px;color:var(--muted)}
++    .bigbtns{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
++
++    .bigbtn{
++      position:relative; overflow:hidden;
++      padding:12px 14px;
++      border-radius:14px;
++      min-width:130px;
++      font-weight:900;
++      letter-spacing:.2px;
++      border:1px solid rgba(31,42,58,.85);
++      background: #152235;
++      transition: transform .2s cubic-bezier(.22,1,.36,1), filter .18s ease, box-shadow .3s ease, opacity .2s ease;
++    }
++    .bigbtn:active{transform: scale(.98)}
++    .bigbtn.good{border-color:rgba(27,211,122,.6); box-shadow:0 0 0 1px rgba(27,211,122,.12) inset}
++    .bigbtn.bad{border-color:rgba(255,77,109,.6); box-shadow:0 0 0 1px rgba(255,77,109,.12) inset}
++    .bigbtn.neutral{border-color: rgba(167,179,199,.35); background: rgba(21,34,53,.55);}
++    .bigbtn.pulse{animation: pulse .22s ease}
++    @keyframes pulse{0%{transform: scale(.98)}60%{transform: scale(1.03)}100%{transform: scale(1)}}
++    .ripple{
++      position:absolute; border-radius:999px;
++      transform: scale(0);
++      background: var(--ripple);
++      animation: rip .55s ease-out;
++      pointer-events:none;
++      mix-blend-mode: screen;
++    }
++    @keyframes rip{to{transform: scale(10); opacity:0}}
++
++    .bigbtn[disabled]{opacity:.55; cursor:not-allowed; filter:saturate(.8)}
++    .statuspill{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-top:8px;}
++    .dot{width:9px;height:9px;border-radius:999px;background:#55657d}
++    .dot.good{background:var(--good)}
++    .dot.bad{background:var(--bad)}
++    .dot.na{background:#55657d}
++
++    .kpis{display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:6px;}
++    @media (max-width: 520px){ .kpis{grid-template-columns:1fr} }
++    .kpi{background: rgba(16,27,40,.55); border:1px solid rgba(31,42,58,.8); border-radius:16px; padding:12px;}
++    .kpi .label{font-size:12px;color:var(--muted)}
++    .kpi .value{font-size:20px;font-weight:900;margin-top:6px}
++    .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}
++    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px}
++    .row{
++      display:flex; align-items:center; justify-content:space-between; gap:10px;
++      border:1px solid rgba(31,42,58,.75);
++      border-radius:14px;
++      padding:10px 12px;
++      background: rgba(16,27,40,.45);
++      color:var(--text);
++    }
++    .row small{color:var(--muted)}
++    .bar{height:10px; background: rgba(31,42,58,.7); border-radius:999px; overflow:hidden; width:44%; border:1px solid rgba(31,42,58,.85);}
++    .fill{height:100%; width:0%; background: linear-gradient(90deg, rgba(27,211,122,.95), rgba(27,211,122,.65));}
++
++    .modalback{
++      position:fixed; inset:0;
++      background: rgba(0,0,0,.55);
++      display:none;
++      align-items:center; justify-content:center;
++      z-index:1000;
++      padding:18px;
++    }
++    .modal{
++      width:min(900px, 100%);
++      background: linear-gradient(180deg, rgba(15,22,32,.98), rgba(15,22,32,.88));
++      border:1px solid rgba(31,42,58,.9);
++      border-radius:22px;
++      box-shadow: var(--shadow);
++      padding:14px;
++      transform: translateY(10px);
++      opacity:0;
++      animation: modalIn .22s ease forwards;
++      position:relative; overflow:hidden;
++    }
++    @keyframes modalIn{to{transform: translateY(0); opacity:1}}
++    .modalheader{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(31,42,58,.6); padding-bottom:10px; margin-bottom:10px;}
++    .modalheader h3{margin:0; font-size:16px}
++    .modalheader p{margin:4px 0 0; color:var(--muted); font-size:12px}
++    .closebtn{background:transparent}
++    .cols{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
++    @media (max-width: 840px){ .cols{grid-template-columns:1fr} }
++    .subcard{border:1px solid rgba(31,42,58,.8); border-radius:18px; background: rgba(16,27,40,.55); padding:12px; position:relative;}
++    .subcard h4{margin:0 0 10px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.2px}
++    .check{display:flex; gap:10px; align-items:flex-start; padding:8px 8px; border-radius:12px;}
++    .check:hover{background: rgba(255,255,255,.03)}
++    .check input{margin-top:2px; transform: scale(1.1)}
++    textarea{
++      width:100%; min-height:120px; resize:vertical;
++      background: rgba(11,15,20,.45);
++      border:1px solid rgba(31,42,58,.9);
++      border-radius:14px;
++      padding:10px 12px;
++      color:var(--text);
++    }
++    .modalfooter{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; border-top:1px solid rgba(31,42,58,.6); padding-top:10px;}
++    .danger{border-color: rgba(255,77,109,.6)}
++    .ok{border-color: rgba(27,211,122,.6)}
++    .mini{padding:8px 10px; border-radius:12px; font-size:12px}
++    .hint{font-size:12px;color:var(--muted)}
++
++    .modalLoader{
++      position:absolute; inset:0;
++      background: rgba(11,15,20,.75);
++      display:flex; align-items:center; justify-content:center;
++      backdrop-filter: blur(8px);
++      z-index:2;
++      opacity:0; pointer-events:none;
++      transition: opacity .18s ease;
++    }
++    .modalLoader.show{opacity:1; pointer-events:auto}
++    .loaderMini{
++      display:flex; flex-direction:column; align-items:center; gap:10px;
++      padding:14px 16px;
++      border-radius:18px;
++      border:1px solid rgba(31,42,58,.85);
++      background: rgba(15,22,32,.85);
++      box-shadow: var(--shadow);
++    }
++    .loaderMini .ff{
++      width:44px;height:44px;border-radius:14px;
++      border:1px solid rgba(31,42,58,.85);
++      display:grid; place-items:center;
++      font-weight:900;
++      background: rgba(11,15,20,.75);
++      position:relative; overflow:hidden;
++    }
++    .loaderMini .ff::before{
++      content:"";
++      position:absolute; inset:-50%;
++      background: conic-gradient(from 180deg, rgba(27,211,122,.35), rgba(255,77,109,.25), rgba(27,211,122,.35));
++      animation: spin 1.2s linear infinite;
++    }
++    .loaderMini .ff span{position:relative; z-index:2;}
++
++    .links{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
++    .links a{
++      text-decoration:none; color: var(--text);
++      border:1px solid rgba(31,42,58,.75);
++      background: rgba(16,27,40,.45);
++      padding:10px 12px;
++      border-radius:14px;
++      transition: transform .12s ease, filter .12s ease;
++    }
++    .links a:hover{filter: brightness(1.08)}
++    .links a:active{transform: translateY(1px)}
++    .links a small{display:block; color:var(--muted); margin-top:3px}
++
++    .report{
++      margin-top:12px;
++      border:1px solid rgba(31,42,58,.8);
++      border-radius:16px;
++      background: rgba(16,27,40,.45);
++      padding:12px;
++      white-space: pre-wrap;
++      line-height:1.35;
++      font-size:13px;
++      color: var(--text);
++    }
++
++    .suno-cta{
++      margin-top:12px;
++      border:1px solid rgba(27,211,122,.45);
++      background: linear-gradient(120deg, rgba(27,211,122,.12), rgba(16,27,40,.55));
++      border-radius:14px;
++      padding:10px 12px;
++      display:none;
++      animation: popin .4s ease both;
++    }
++    .suno-cta.show{display:block}
++    .suno-cta strong{display:block; margin-bottom:4px}
++    .suno-cta a{color:#91ffd0; font-weight:700}
++
++    @media (prefers-reduced-motion: no-preference){
++      .card, .task, .kpi, .row, .subcard{will-change: transform, opacity;}
++    }
++
++    .workcard{
++      margin-top:12px;
++      border:1px solid rgba(80,95,120,.55);
++      border-radius:14px;
++      background: rgba(11,15,20,.35);
++      padding:10px;
++    }
++    .workcard h3{margin:0 0 8px; font-size:13px; color:var(--text)}
++    .work-kpis{display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:8px}
++    .work-kpi{border:1px solid rgba(31,42,58,.8); border-radius:12px; background:rgba(16,27,40,.45); padding:8px}
++    .work-kpi .label{font-size:11px;color:var(--muted)}
++    .work-kpi .value{font-size:16px;font-weight:900;margin-top:4px}
++    .work-days{display:flex; flex-direction:column; gap:6px; margin-top:8px}
++    .work-row{display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid rgba(31,42,58,.75); border-radius:11px; padding:7px 9px; background:rgba(16,27,40,.35); font-size:12px}
++    .work-row .oktxt{color:var(--good); font-weight:700}
++    .work-row .badtxt{color:var(--bad); font-weight:700}
++    .work-row .natxt{color:var(--muted)}
++    .work-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
++    @media (max-width: 520px){ .work-kpis{grid-template-columns:1fr} }
++  </style>
++</head>
++
++<body>
++  <div class="splash" id="splash">
++    <div class="brand">
++      <div class="logo"><span>FF</span></div>
++      <div style="font-weight:900; letter-spacing:.2px">Felipe Forero</div>
++      <div class="subtitle">Music First • disciplina • estadísticas</div>
++      <div class="loadingbar"><div class="fill"></div></div>
++    </div>
++  </div>
++
++<header>
++  <div class="wrap">
++    <div class="toprow">
++      <h1>Felipe Forero <span class="badge"><strong>Music First</strong> • simple • medible</span></h1>
++
++      <div class="daynav">
++        <span class="badge" id="todayLabel">Hoy</span>
++
++        <select id="daySelect" title="Cambiar día">
++          <option value="mon">Lunes</option>
++          <option value="tue">Martes</option>
++          <option value="wed">Miércoles</option>
++          <option value="thu">Jueves</option>
++          <option value="fri">Viernes</option>
++          <option value="sat">Sábado</option>
++          <option value="sun">Domingo</option>
++        </select>
++
++        <button id="goTodayBtn" class="ghost">Ir a hoy</button>
++        <button id="weeklyReportBtn" class="ghost">Informe semanal</button>
++        <button id="exportBtn" class="ghost">Exportar</button>
++        <button id="importBtn" class="ghost">Importar</button>
++        <button id="resetWeekBtn" class="ghost danger">Reset semana</button>
++      </div>
++    </div>
++  </div>
++</header>
++
++<div class="wrap">
++  <div class="grid">
++    <section class="card">
++      <h2>Tareas del día</h2>
++      <div class="tasks" id="tasks"></div>
++      <div class="hint" style="margin-top:10px">
++        Música tiene 2 niveles: mínima (30min) o profunda (2h+). Marca una.
++      </div>
++      <div class="report" id="reportBox" style="display:none"></div>
++    </section>
++
++    <aside class="card">
++      <h2>Estadísticas</h2>
++
++      <div class="kpis">
++        <div class="kpi">
++          <div class="label">% de hoy</div>
++          <div class="value" id="kpiToday">0%</div>
++          <div class="sub" id="kpiTodaySub">0/0 tareas</div>
++        </div>
++        <div class="kpi">
++          <div class="label">% semana</div>
++          <div class="value" id="kpiWeek">0%</div>
++          <div class="sub" id="kpiWeekSub">0/0 tareas</div>
++        </div>
++        <div class="kpi">
++          <div class="label">Racha Música</div>
++          <div class="value" id="kpiStreak">0</div>
++          <div class="sub" id="kpiStreakSub">días seguidos</div>
++        </div>
++      </div>
++
++      <div style="margin-top:12px">
++        <canvas id="weekChart" height="170"></canvas>
++      </div>
++
++      <div class="list" id="byGoalList"></div>
++      <div class="workcard">
++        <h3>💼 Estadísticas de trabajo (separadas)</h3>
++        <div class="work-kpis">
++          <div class="work-kpi">
++            <div class="label">Horas semana</div>
++            <div class="value" id="workWeekHours">0h</div>
++          </div>
++          <div class="work-kpi">
++            <div class="label">Meta semana</div>
++            <div class="value" id="workWeekTarget">0h</div>
++          </div>
++          <div class="work-kpi">
++            <div class="label">Cumplimiento</div>
++            <div class="value" id="workWeekPct">0%</div>
++          </div>
++        </div>
++        <div class="hint" id="workTodayWindow">Hoy: -</div>
++        <div class="work-actions">
++          <button id="workLogBtn" class="mini">🕒 Registrar horas de hoy</button>
++        </div>
++        <div class="work-days" id="workDaysList"></div>
++      </div>
++    </aside>
++  </div>
++</div>
++
++<div class="modalback" id="modalBack" role="dialog" aria-modal="true">
++  <div class="modal" id="modal">
++    <div class="modalLoader" id="modalLoader">
++      <div class="loaderMini">
++        <div class="ff"><span>FF</span></div>
++        <div class="subtitle">cargando…</div>
++      </div>
++    </div>
++
++    <div class="modalheader">
++      <div>
++        <h3 id="modalTitle">Tarea</h3>
++        <p id="modalMeta">Subtareas</p>
++      </div>
++      <button class="closebtn" id="closeModalBtn">Cerrar ✕</button>
++    </div>
++
++    <div class="cols">
++      <div class="subcard">
++        <h4>Subtareas</h4>
++        <div id="subtasks"></div>
++
++        <h4 style="margin-top:12px">Tutoriales</h4>
++        <div class="links" id="tutorialLinks"></div>
++      </div>
++
++      <div class="subcard">
++        <h4>Notas (opcional)</h4>
++        <textarea id="notes" placeholder="Qué hiciste, qué aprendiste, links, ideas, etc."></textarea>
++        <div class="suno-cta" id="sunoCta">
++          <strong>🎵 ¡Buen trabajo con música!</strong>
++          Sigue creando aquí: <a href="https://suno.com" target="_blank" rel="noopener noreferrer">suno.com</a>
++        </div>
++        <div class="hint" style="margin-top:8px">
++          Tip: aquí escribe tu mini log de música (ideas, hooks, demos).
++        </div>
++      </div>
++    </div>
++
++    <div class="modalfooter">
++      <div class="hint" id="modalHint">Se guarda automáticamente.</div>
++      <div style="display:flex; gap:10px; flex-wrap:wrap">
++        <button id="clearTaskBtn" class="mini danger">Borrar estado</button>
++        <button id="saveCloseBtn" class="mini ok">Guardar y cerrar</button>
++      </div>
++    </div>
++  </div>
++</div>
++
++<script>
++/** ========= Tutorials ========= */
++const TUTORIALS = {
++  musica: [
++    { title:"Ableton Live for Beginners (playlist)", url:"https://www.youtube.com/playlist?list=PLoO2tOP2r-XsXH0lybWl9zMvYp3lpLF46", note:"Producción desde cero" },
++    { title:"Compresión (cómo usarla bien)", url:"https://www.youtube.com/watch?v=yi0J9JsRdI4", note:"Mixing / compresión" }
++  ],
++  edicion: [
++    { title:"DaVinci Resolve Full Course (Beginners)", url:"https://www.youtube.com/watch?v=MCDVcQIA3UM", note:"Curso completo" }
++  ],
++  foto: [
++    { title:"Photography playlist (Tony & Chelsea)", url:"https://www.youtube.com/playlist?list=PLNwO5t7U7k7CWJlE3PmgtZ7Dmuy6B-HtO", note:"Fundamentos" }
++  ],
++  animacion: [
++    { title:"12 Principles of Animation (Alan Becker)", url:"https://www.youtube.com/watch?v=uDqjIdI4bF4", note:"Serie de los 12 principios" }
++  ],
++  tatuar: [
++    { title:"Tattooing 101 (canal)", url:"https://www.youtube.com/c/Tattooing101", note:"Educación estructurada" }
++  ],
++  skate: [
++    { title:"How to Ollie for Beginners (Braille)", url:"https://www.youtube.com/watch?v=2m95ftcaJRw", note:"Ollie desde cero" }
++  ],
++  italiano: [
++    { title:"LearnAmo playlists", url:"https://www.youtube.com/c/LearnAmo/playlists", note:"Italiano A1–B1" }
++  ]
++};
++
++/** ========= Goals + subtasks ========= */
++const GOALS = {
++  musica: { name:"Música (diaria)", subtasks:[
++    "Composición (melodía/letra)","Producción (arreglo/sonido)","Grabación",
++    "Mezcla (balance/FX)","Export / Demo / Backup","Marketing / Post"
++  ]},
++  gym: { name:"Gym / Cuerpo", subtasks:["Fuerza","Cardio 10–20 min","Proteína","Agua + pasos"]},
++  skate: { name:"Skate", subtasks:["Calentamiento","Técnica","Trucos (objetivo)","Estiramiento"]},
++  italiano: { name:"Italiano", subtasks:["Vocabulario","Escucha","Hablar","Gramática","Escritura"]},
++  edicion: { name:"Edición de video (musical)", subtasks:["Organizar","Cortes","Color","Audio/sync","Textos","Export"]},
++  foto: { name:"Fotografía", subtasks:["Disparar","Composición","Luz","Edición","Portafolio"]},
++  animacion: { name:"Animación", subtasks:["Ejercicio","Timing","Escena pequeña","Render","Notas"]},
++  tatuar: { name:"Tatuaje", subtasks:["Teoría (seguridad)","Trazos","Sombras","Diseño","Piel sintética"]},
++};
++
++const GOAL_EMOJIS = {
++  musica:"🎵",
++  gym:"💪",
++  skate:"🛹",
++  italiano:"🇮🇹",
++  edicion:"🎬",
++  foto:"📸",
++  animacion:"✨",
++  tatuar:"🖋️",
++};
++function getGoalLabel(goalId){
++  const emoji = GOAL_EMOJIS[goalId] || "📌";
++  const name = GOALS[goalId]?.name || goalId;
++  return `${emoji} ${name}`;
++}
++
++/** ========= Week plan ========= */
++const WEEK_PLAN = {
++  mon: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
++  tue: [{id:"musica",window:"9:00–12:00",mode:"enfoque"},{id:"foto",window:"15:00–16:30",mode:"creativo"},{id:"gym",window:"18:00–19:00",mode:"físico"}],
++  wed: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"tatuar",window:"15:00–16:30",mode:"habilidad"},{id:"gym",window:"18:00–19:00",mode:"físico"},{id:"italiano",window:"21:00–21:30",mode:"ligero"}],
++  thu: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"italiano",window:"15:30–16:30",mode:"ligero"},{id:"animacion",window:"21:00–22:00",mode:"técnico"}],
++  fri: [{id:"musica",window:"9:00–10:30",mode:"enfoque"},{id:"skate",window:"15:30–16:30",mode:"físico"}],
++  sat: [{id:"musica",window:"9:00–11:00",mode:"enfoque"},{id:"gym",window:"15:30–16:30",mode:"físico"},{id:"edicion",window:"21:00–22:00",mode:"técnico"}],
++  sun: [{id:"musica",window:"9:00–10:00 (ligero)",mode:"ligero"},{id:"skate",window:"15:00–16:00",mode:"físico"},{id:"animacion",window:"20:30–21:30",mode:"técnico"}],
++};
++
++const WORK_PLAN = {
++  mon:{ windows:["11:00–15:00","17:00–20:00"], targetHours:7 },
++  tue:{ windows:["12:00–15:00"], targetHours:3 },
++  wed:{ windows:["11:00–15:00"], targetHours:4 },
++  thu:{ windows:["11:00–15:00","17:00–20:00"], targetHours:7 },
++  fri:{ windows:["11:00–15:00","17:00–20:00"], targetHours:7 },
++  sat:{ windows:["11:00–15:00","17:00–21:00"], targetHours:8 },
++  sun:{ windows:["11:00–15:00","17:00–20:00"], targetHours:7 },
++};
++
++/**
++ * Música ahora tiene 2 niveles.
++ * - musica_min: cuenta como "mínima" (30min)
++ * - musica_deep: cuenta como "profunda" (2h+)
++ */
++const WEIGHTS = { musica_min:3, musica_deep:5, gym:2, skate:2, italiano:1, edicion:2, foto:2, animacion:2, tatuar:2 };
++
++/** ========= Storage ========= */
++const LS_KEY="felipe_forero_dashboard_v3";
++function loadData(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
++function saveData(data){localStorage.setItem(LS_KEY, JSON.stringify(data));}
++function getWeekKey(date){
++  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
++  const dayNum=d.getUTCDay()||7;
++  d.setUTCDate(d.getUTCDate()+4-dayNum);
++  const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
++  const weekNo=Math.ceil((((d-yearStart)/86400000)+1)/7);
++  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
++}
++function dayKeyFromDate(date){
++  const map=["sun","mon","tue","wed","thu","fri","sat"];
++  return map[date.getDay()];
++}
++function formatDateLabel(date){
++  return date.toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"short",day:"numeric"});
++}
++function ensurePath(obj,path,fallback){
++  let cur=obj;
++  for(let i=0;i<path.length;i++){
++    const k=path[i];
++    if(cur[k]==null) cur[k]=(i===path.length-1?fallback:{});
++    cur=cur[k];
++  }
++  return cur;
++}
++function labelDay(dayKey){
++  const map={mon:"Lunes",tue:"Martes",wed:"Miércoles",thu:"Jueves",fri:"Viernes",sat:"Sábado",sun:"Domingo"};
++  return map[dayKey]||dayKey;
++}
++
++/** ========= State + DOM ========= */
++const state={ selectedDay:null, weekKey:null, data:loadData(), modal:{open:false,goalId:null,dayKey:null} };
++
++const tasksEl=document.getElementById("tasks");
++const daySelect=document.getElementById("daySelect");
++const todayLabel=document.getElementById("todayLabel");
++const goTodayBtn=document.getElementById("goTodayBtn");
++const resetWeekBtn=document.getElementById("resetWeekBtn");
++const weeklyReportBtn=document.getElementById("weeklyReportBtn");
++const exportBtn=document.getElementById("exportBtn");
++const importBtn=document.getElementById("importBtn");
++
++const kpiToday=document.getElementById("kpiToday");
++const kpiTodaySub=document.getElementById("kpiTodaySub");
++const kpiWeek=document.getElementById("kpiWeek");
++const kpiWeekSub=document.getElementById("kpiWeekSub");
++const kpiStreak=document.getElementById("kpiStreak");
++const kpiStreakSub=document.getElementById("kpiStreakSub");
++const byGoalList=document.getElementById("byGoalList");
++const reportBox=document.getElementById("reportBox");
++const workWeekHours=document.getElementById("workWeekHours");
++const workWeekTarget=document.getElementById("workWeekTarget");
++const workWeekPct=document.getElementById("workWeekPct");
++const workTodayWindow=document.getElementById("workTodayWindow");
++const workDaysList=document.getElementById("workDaysList");
++const workLogBtn=document.getElementById("workLogBtn");
++
++const modalBack=document.getElementById("modalBack");
++const closeModalBtn=document.getElementById("closeModalBtn");
++const saveCloseBtn=document.getElementById("saveCloseBtn");
++const clearTaskBtn=document.getElementById("clearTaskBtn");
++const modalTitle=document.getElementById("modalTitle");
++const modalMeta=document.getElementById("modalMeta");
++const subtasksEl=document.getElementById("subtasks");
++const notesEl=document.getElementById("notes");
++const tutorialLinks=document.getElementById("tutorialLinks");
++const modalLoader=document.getElementById("modalLoader");
++const sunoCta=document.getElementById("sunoCta");
++
++let chart=null;
++
++/** ========= Ripple helper ========= */
++function ripple(btn,event){
++  const r=document.createElement("span");
++  r.className="ripple";
++  const rect=btn.getBoundingClientRect();
++  const size=Math.max(rect.width,rect.height);
++  r.style.width=r.style.height=size+"px";
++  const x=(event.clientX-rect.left)-(size/2);
++  const y=(event.clientY-rect.top)-(size/2);
++  r.style.left=x+"px"; r.style.top=y+"px";
++  btn.appendChild(r);
++  setTimeout(()=>r.remove(),600);
++  btn.classList.remove("pulse"); void btn.offsetWidth; btn.classList.add("pulse");
++}
++
++/** ========= Records ========= */
++function getRecord(weekKey, dayKey, goalId){
++  const week=ensurePath(state.data,[weekKey],{});
++  const day=ensurePath(week,[dayKey],{});
++  const rec=ensurePath(day,[goalId],{status:null,musicLevel:null,subtasks:{},notes:""});
++  if(rec.subtasks==null) rec.subtasks={};
++  if(rec.notes==null) rec.notes="";
++  if(rec.musicLevel==null) rec.musicLevel=null;
++  return rec;
++}
++function setStatus(weekKey, dayKey, goalId, status, musicLevel=null){
++  const rec=getRecord(weekKey, dayKey, goalId);
++  rec.status=status;
++  if(goalId==="musica") rec.musicLevel = musicLevel;
++  saveData(state.data);
++  render();
++}
++function setSubtask(weekKey, dayKey, goalId, subtaskLabel, value){
++  const rec=getRecord(weekKey, dayKey, goalId);
++  rec.subtasks[subtaskLabel]=!!value;
++  saveData(state.data);
++}
++function setNotes(weekKey, dayKey, goalId, notes){
++  const rec=getRecord(weekKey, dayKey, goalId);
++  rec.notes=notes;
++  saveData(state.data);
++}
++
++/** ========= Modal ========= */
++function renderMusicCTA(goalId, rec){
++  const shouldShow = goalId === "musica" && rec.status === "yes";
++  sunoCta.classList.toggle("show", shouldShow);
++}
++
++function openModal(dayKey, goalId){
++  modalLoader.classList.add("show");
++  modalBack.style.display="flex";
++
++  setTimeout(()=>{
++    const goal=GOALS[goalId];
++    const rec=getRecord(state.weekKey, dayKey, goalId);
++
++    state.modal={open:true,dayKey,goalId};
++
++    modalTitle.textContent=getGoalLabel(goalId);
++    modalMeta.textContent=`${labelDay(dayKey)} • Semana ${state.weekKey}`;
++
++    subtasksEl.innerHTML="";
++    for(const label of (goal.subtasks||[])){
++      const row=document.createElement("label");
++      row.className="check";
++      const cb=document.createElement("input");
++      cb.type="checkbox";
++      cb.checked=!!rec.subtasks[label];
++      cb.onchange=()=>{
++        setSubtask(state.weekKey, dayKey, goalId, label, cb.checked);
++        const r=getRecord(state.weekKey, dayKey, goalId);
++        if(r.status==null){
++          r.status="yes";
++          saveData(state.data);
++          render();
++        }
++      };
++      const span=document.createElement("span");
++      span.textContent=label;
++      row.appendChild(cb); row.appendChild(span);
++      subtasksEl.appendChild(row);
++    }
++
++    notesEl.value=rec.notes||"";
++    renderMusicCTA(goalId, rec);
++    notesEl.oninput=()=>setNotes(state.weekKey, dayKey, goalId, notesEl.value);
++
++    tutorialLinks.innerHTML="";
++    const links=TUTORIALS[goalId]||[];
++    if(!links.length){
++      tutorialLinks.innerHTML=`<div class="hint">Sin links aún.</div>`;
++    }else{
++      for(const l of links){
++        const a=document.createElement("a");
++        a.href=l.url; a.target="_blank"; a.rel="noopener";
++        a.innerHTML=`<b>${l.title}</b><small>${l.note||""}</small>`;
++        tutorialLinks.appendChild(a);
++      }
++    }
++
++    modalLoader.classList.remove("show");
++  }, 240);
++}
++function closeModal(){
++  state.modal={open:false,goalId:null,dayKey:null};
++  modalBack.style.display="none";
++}
++closeModalBtn.onclick=closeModal;
++saveCloseBtn.onclick=()=>{saveData(state.data); closeModal(); render();};
++modalBack.addEventListener("click",(e)=>{ if(e.target===modalBack) closeModal(); });
++
++clearTaskBtn.onclick=()=>{
++  const {dayKey,goalId}=state.modal;
++  if(!dayKey||!goalId) return;
++  const rec=getRecord(state.weekKey, dayKey, goalId);
++  rec.status=null;
++  rec.musicLevel=null;
++  rec.subtasks={};
++  rec.notes="";
++  saveData(state.data);
++  closeModal();
++  render();
++};
++
++/** ========= Stats ========= */
++function musicWeightFromRec(rec){
++  if(rec.status!=="yes") return 0;
++  if(rec.musicLevel==="deep") return WEIGHTS.musica_deep;
++  if(rec.musicLevel==="min") return WEIGHTS.musica_min;
++  return WEIGHTS.musica_min;
++}
++function computeDayScore(weekKey, dayKey){
++  const plan=WEEK_PLAN[dayKey]||[];
++  let got=0,total=0,doneTasks=0,totalTasks=0;
++
++  for(const t of plan){
++    totalTasks++;
++    if(t.id==="musica"){
++      total += WEIGHTS.musica_deep;
++      const rec=getRecord(weekKey, dayKey, "musica");
++      const w = musicWeightFromRec(rec);
++      if(w>0){ got += w; doneTasks++; }
++    }else{
++      const w=WEIGHTS[t.id]??1;
++      total += w;
++      const rec=getRecord(weekKey, dayKey, t.id);
++      if(rec.status==="yes"){ got += w; doneTasks++; }
++    }
++  }
++  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
++}
++function computeWeekScore(weekKey){
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  let got=0,total=0,doneTasks=0,totalTasks=0;
++
++  for(const d of days){
++    for(const t of (WEEK_PLAN[d]||[])){
++      totalTasks++;
++      if(t.id==="musica"){
++        total += WEIGHTS.musica_deep;
++        const rec=getRecord(weekKey, d, "musica");
++        const w = musicWeightFromRec(rec);
++        if(w>0){ got += w; doneTasks++; }
++      }else{
++        const w=WEIGHTS[t.id]??1;
++        total += w;
++        const rec=getRecord(weekKey, d, t.id);
++        if(rec.status==="yes"){ got += w; doneTasks++; }
++      }
++    }
++  }
++  return { pct: total?Math.round((got/total)*100):0, got,total,doneTasks,totalTasks };
++}
++function computeByGoal(weekKey){
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  const stats={};
++  for(const gid of Object.keys(GOALS)) stats[gid]={scheduled:0,done:0,pct:0};
++
++  for(const d of days){
++    for(const t of (WEEK_PLAN[d]||[])){
++      stats[t.id].scheduled++;
++      const rec=getRecord(weekKey, d, t.id);
++      if(t.id==="musica"){
++        if(rec.status==="yes") stats[t.id].done++;
++      }else{
++        if(rec.status==="yes") stats[t.id].done++;
++      }
++    }
++  }
++  for(const gid of Object.keys(stats)){
++    const s=stats[gid];
++    s.pct = s.scheduled?Math.round((s.done/s.scheduled)*100):0;
++  }
++  return stats;
++}
++function computeMusicStreakToToday(weekKey){
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  const todayKey=dayKeyFromDate(new Date());
++  let upto=0;
++  for(const d of days){
++    const rec=getRecord(weekKey, d, "musica");
++    if(rec.status==="yes") upto++;
++    else upto=0;
++    if(d===todayKey) break;
++  }
++  return upto;
++}
++function renderChart(){
++  if(!window.Chart) return;
++  const labels=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  const values=days.map(d=>computeDayScore(state.weekKey,d).pct);
++  const ctx=document.getElementById("weekChart");
++  if(chart) chart.destroy();
++  chart=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"% por día",data:values,tension:0.35}]},
++    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"}}}}
++  });
++}
++function getWorkRecord(weekKey, dayKey){
++  const week=ensurePath(state.data,[weekKey],{});
++  const work=ensurePath(week,["_work"],{});
++  const rec=ensurePath(work,[dayKey],{hours:0,updatedAt:null});
++  if(typeof rec.hours!=="number") rec.hours=0;
++  return rec;
++}
++function setWorkHours(weekKey, dayKey, hours){
++  const rec=getWorkRecord(weekKey, dayKey);
++  rec.hours=Math.max(0, Number(hours)||0);
++  rec.updatedAt=new Date().toISOString();
++  saveData(state.data);
++}
++function computeWorkWeek(weekKey){
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  let target=0, worked=0;
++  const rows=[];
++  for(const d of days){
++    const plan=WORK_PLAN[d]||{windows:[],targetHours:0};
++    const rec=getWorkRecord(weekKey,d);
++    target += plan.targetHours||0;
++    worked += rec.hours||0;
++    rows.push({
++      dayKey:d,
++      dayLabel:labelDay(d),
++      windows:(plan.windows||[]).join(" y ") || "-",
++      target:plan.targetHours||0,
++      worked:rec.hours||0,
++      status:(rec.hours||0) >= (plan.targetHours||0) ? "ok" : ((rec.hours||0)>0?"partial":"none")
++    });
++  }
++  const pct=target?Math.round((worked/target)*100):0;
++  return {target,worked,pct,rows};
++}
++function renderWorkStats(){
++  const day=state.selectedDay;
++  const todayPlan=WORK_PLAN[day]||{windows:[],targetHours:0};
++  workTodayWindow.textContent = `Hoy: ${labelDay(day)} • ${todayPlan.windows.join(" y ") || "Sin turno"}`;
++
++  const week=computeWorkWeek(state.weekKey);
++  workWeekHours.textContent=`${week.worked.toFixed(1)}h`;
++  workWeekTarget.textContent=`${week.target.toFixed(1)}h`;
++  workWeekPct.textContent=`${week.pct}%`;
++
++  workDaysList.innerHTML="";
++  for(const row of week.rows){
++    const el=document.createElement("div");
++    el.className="work-row";
++    const statusClass = row.status==="ok" ? "oktxt" : row.status==="partial" ? "natxt" : "badtxt";
++    const statusText = row.status==="ok" ? "✅ Cumplido" : row.status==="partial" ? "🟡 Parcial" : "❌ Pendiente";
++    el.innerHTML=`<div><b>${row.dayLabel}</b><br><small>${row.windows}</small></div><div><small>${row.worked.toFixed(1)}h / ${row.target.toFixed(1)}h</small><br><span class="${statusClass}">${statusText}</span></div>`;
++    workDaysList.appendChild(el);
++  }
++}
++
++function renderStats(){
++  const day=state.selectedDay;
++  const d=computeDayScore(state.weekKey, day);
++  kpiToday.textContent=d.pct+"%";
++  kpiTodaySub.textContent=`${d.doneTasks}/${d.totalTasks} tareas`;
++
++  const w=computeWeekScore(state.weekKey);
++  kpiWeek.textContent=w.pct+"%";
++  kpiWeekSub.textContent=`${w.doneTasks}/${w.totalTasks} tareas`;
++
++  const streak=computeMusicStreakToToday(state.weekKey);
++  kpiStreak.textContent=String(streak);
++  kpiStreakSub.textContent="días seguidos (hasta hoy)";
++
++  const byGoal=computeByGoal(state.weekKey);
++  byGoalList.innerHTML="";
++  const title=document.createElement("h2");
++  title.textContent="Por objetivo (semana)";
++  byGoalList.appendChild(title);
++
++  const entries=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>b[1].pct-a[1].pct);
++  for(const [gid,s] of entries){
++    const r=document.createElement("div"); r.className="row";
++    const left=document.createElement("div");
++    left.innerHTML=`<div><b>${getGoalLabel(gid)}</b></div><small>${s.done}/${s.scheduled} cumplidas</small>`;
++    const bar=document.createElement("div"); bar.className="bar";
++    const fill=document.createElement("div"); fill.className="fill"; fill.style.width=`${s.pct}%`;
++    bar.appendChild(fill);
++    const right=document.createElement("div"); right.innerHTML=`<b>${s.pct}%</b>`;
++    r.appendChild(left); r.appendChild(bar); r.appendChild(right);
++    byGoalList.appendChild(r);
++  }
++
++  renderChart();
++}
++
++/** ========= Weekly report ========= */
++function generateWeeklyReport(){
++  const byGoal=computeByGoal(state.weekKey);
++  const week=computeWeekScore(state.weekKey);
++
++  const sorted=Object.entries(byGoal).filter(([_,s])=>s.scheduled>0).sort((a,b)=>a[1].pct-b[1].pct);
++  const bottom=sorted.slice(0,3);
++  const top=sorted.slice(-2).reverse();
++
++  const days=["mon","tue","wed","thu","fri","sat","sun"];
++  const missedMusic = days.filter(d=>getRecord(state.weekKey,d,"musica").status!=="yes").map(labelDay);
++
++  const recs=[];
++  for(const [gid,_] of bottom){
++    if(gid==="musica"){
++      recs.push("Música: mínimo 30 min SIEMPRE. Si estás cansado, haz ‘mínima’ y listo.");
++    }else if(gid==="italiano"){
++      recs.push("Italiano: micro-sesión diaria (10–15 min). No la pongas solo cuando tengas energía.");
++    }else if(gid==="edicion"){
++      recs.push("Edición: haz 1 paso fijo (solo cortes + export). Evita el perfeccionismo.");
++    }else if(gid==="gym"){
++      recs.push("Cuerpo: si no hay gym, reemplaza por caminata + flexiones 15 min.");
++    }else if(gid==="skate"){
++      recs.push("Skate: 20–30 min técnica + 1 truco objetivo, mejor que 0.");
++    }else{
++      recs.push(`${getGoalLabel(gid)}: reduce el alcance (1 ejercicio corto por sesión).`);
++    }
++  }
++
++  const text =
++`📌 INFORME SEMANAL — ${state.weekKey}
++
++✅ Cumplimiento general: ${week.pct}% (${week.doneTasks}/${week.totalTasks} tareas)
++
++⭐ Lo mejor:
++${top.map(([gid,s])=>`- ${getGoalLabel(gid)}: ${s.pct}%`).join("\n") || "- (sin datos)"}
++
++⚠️ Lo más flojo:
++${bottom.map(([gid,s])=>`- ${getGoalLabel(gid)}: ${s.pct}%`).join("\n") || "- (sin datos)"}
++
++🎵 Música (días sin cumplir):
++${missedMusic.length ? "- " + missedMusic.join(", ") : "- Perfecto. Cadena intacta."}
++
++🎯 Recomendaciones directas:
++${recs.map(r=>`- ${r}`).join("\n")}
++`;
++
++  reportBox.style.display="block";
++  reportBox.textContent=text;
++  reportBox.scrollIntoView({behavior:"smooth", block:"start"});
++}
++
++/** ========= Render tasks ========= */
++function render(){
++  todayLabel.textContent = "Hoy: " + formatDateLabel(new Date());
++  tasksEl.innerHTML="";
++  reportBox.style.display="none";
++
++  const day=state.selectedDay;
++  const plan=WEEK_PLAN[day]||[];
++
++  for(const item of plan){
++    const goalId=item.id;
++    const goal=GOALS[goalId];
++    const rec=getRecord(state.weekKey, day, goalId);
++    const status=rec.status;
++
++    // ✅/❌ color por estado + tachado
++    let cls="task";
++    if(status!=null) cls += " completed";
++    if(status==="yes") cls += " done";
++    if(status==="no") cls += " missed";
++
++    const task=document.createElement("div");
++    task.className=cls;
++
++    const head=document.createElement("div");
++    head.className="taskhead";
++
++    const title=document.createElement("div");
++    title.className="tasktitle";
++
++    const b=document.createElement("b");
++    b.textContent=getGoalLabel(goalId);
++
++    const meta=document.createElement("div");
++    meta.className="taskmeta";
++
++    if(goalId==="musica" && status==="yes"){
++      const level = rec.musicLevel==="deep" ? "profunda (2h+)" : "mínima (30m)";
++      meta.textContent=`${item.window} • ${item.mode} • ✅ ${level}`;
++    }else{
++      meta.textContent=`${item.window} • ${item.mode}`;
++    }
++
++    title.appendChild(b);
++    title.appendChild(meta);
++
++    const btns=document.createElement("div");
++    btns.className="bigbtns";
++
++    if(goalId==="musica"){
++      const minBtn=document.createElement("button");
++      minBtn.className="bigbtn good";
++      minBtn.textContent="✅ Mínima (30m)";
++      minBtn.disabled = status!=null;
++      minBtn.onclick=(e)=>{ ripple(minBtn,e); setStatus(state.weekKey, day, "musica", "yes", "min"); openModal(day,"musica"); };
++
++      const deepBtn=document.createElement("button");
++      deepBtn.className="bigbtn good";
++      deepBtn.textContent="🔥 Profunda (2h+)";
++      deepBtn.disabled = status!=null;
++      deepBtn.onclick=(e)=>{ ripple(deepBtn,e); setStatus(state.weekKey, day, "musica", "yes", "deep"); openModal(day,"musica"); };
++
++      const noBtn=document.createElement("button");
++      noBtn.className="bigbtn bad";
++      noBtn.textContent="❌ No";
++      noBtn.disabled = status!=null;
++      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, "musica", "no", null); openModal(day,"musica"); };
++
++      if(status!=null){
++        const editBtn=document.createElement("button");
++        editBtn.className="bigbtn neutral";
++        editBtn.textContent="✏️ Editar / Suno";
++        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day,"musica"); };
++        btns.appendChild(editBtn);
++      }else{
++        btns.appendChild(minBtn);
++        btns.appendChild(deepBtn);
++        btns.appendChild(noBtn);
++      }
++    }else{
++      const yesBtn=document.createElement("button");
++      yesBtn.className="bigbtn good";
++      yesBtn.textContent="✅ Cumplí";
++      yesBtn.disabled = status!=null;
++      yesBtn.onclick=(e)=>{ ripple(yesBtn,e); setStatus(state.weekKey, day, goalId, "yes"); openModal(day, goalId); };
++
++      const noBtn=document.createElement("button");
++      noBtn.className="bigbtn bad";
++      noBtn.textContent="❌ No";
++      noBtn.disabled = status!=null;
++      noBtn.onclick=(e)=>{ ripple(noBtn,e); setStatus(state.weekKey, day, goalId, "no"); openModal(day, goalId); };
++
++      if(status!=null){
++        const editBtn=document.createElement("button");
++        editBtn.className="bigbtn neutral";
++        editBtn.textContent="✏️ Editar";
++        editBtn.onclick=(e)=>{ ripple(editBtn,e); openModal(day, goalId); };
++        btns.appendChild(editBtn);
++      }else{
++        btns.appendChild(yesBtn);
++        btns.appendChild(noBtn);
++      }
++    }
++
++    head.appendChild(title);
++    head.appendChild(btns);
++
++    const pill=document.createElement("div");
++    pill.className="statuspill";
++    const dot=document.createElement("span");
++    dot.className="dot " + (status==="yes"?"good":status==="no"?"bad":"na");
++    const text=document.createElement("span");
++    text.textContent = status==="yes" ? "Marcado como: Cumplí" : status==="no" ? "Marcado como: No" : "Sin marcar";
++    pill.appendChild(dot); pill.appendChild(text);
++
++    task.appendChild(head);
++    task.appendChild(pill);
++    tasksEl.appendChild(task);
++  }
++
++  renderStats();
++  renderWorkStats();
++}
++
++/** ========= Export/Import ========= */
++function download(filename, text){
++  const a=document.createElement("a");
++  a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
++  a.download=filename;
++  document.body.appendChild(a);
++  a.click();
++  a.remove();
++}
++function uploadJson(){
++  const inp=document.createElement("input");
++  inp.type="file";
++  inp.accept="application/json";
++  inp.onchange=()=>{
++    const file=inp.files[0];
++    if(!file) return;
++    const reader=new FileReader();
++    reader.onload=()=>{
++      try{
++        const obj=JSON.parse(String(reader.result||"{}"));
++        state.data=obj;
++        saveData(state.data);
++        render();
++        alert("Importado ✅");
++      }catch(e){
++        alert("Archivo inválido ❌");
++      }
++    };
++    reader.readAsText(file);
++  };
++  inp.click();
++}
++
++/** ========= Events ========= */
++daySelect.onchange=()=>{ state.selectedDay=daySelect.value; render(); };
++goTodayBtn.onclick=()=>{ state.selectedDay=dayKeyFromDate(new Date()); daySelect.value=state.selectedDay; render(); };
++
++weeklyReportBtn.onclick=generateWeeklyReport;
++
++exportBtn.onclick=()=>download(`felipe_forero_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state.data,null,2));
++importBtn.onclick=uploadJson;
++
++resetWeekBtn.onclick=()=>{
++  if(confirm("¿Seguro? Esto borra TODOS los datos de esta semana.")){
++    delete state.data[state.weekKey];
++    saveData(state.data);
++    render();
++  }
++};
++
++workLogBtn.onclick=()=>{
++  const day=state.selectedDay;
++  const plan=WORK_PLAN[day]||{targetHours:0};
++  const rec=getWorkRecord(state.weekKey, day);
++  const typed=prompt(`Horas trabajadas hoy (${labelDay(day)}).\nMeta: ${plan.targetHours||0}h`, String(rec.hours||0));
++  if(typed==null) return;
++  const normalized=String(typed).replace(",", ".").trim();
++  const hours=Number(normalized);
++  if(Number.isNaN(hours) || hours<0){
++    alert("Ingresa un número válido de horas (ej: 6.5)");
++    return;
++  }
++  setWorkHours(state.weekKey, day, hours);
++  renderWorkStats();
++};
++
++/** ========= Init ========= */
++(function init(){
++  const splash=document.getElementById("splash");
++  setTimeout(()=>splash.classList.add("hide"), 700);
++
++  const now=new Date();
++  state.weekKey=getWeekKey(now);
++  state.selectedDay=dayKeyFromDate(now);
++  daySelect.value=state.selectedDay;
++  render();
++})();
++</script>
++</body>
++</html>
