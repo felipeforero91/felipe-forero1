@@ -1,8 +1,12 @@
-diff --git a/!doctype html.txt b/!doctype html.txt
-index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdcce92dc36 100644
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/!doctype html.txt b/index.html
+similarity index 82%
+rename from !doctype html.txt
+rename to index.html
+index 1c9474abbe203c42cf68f426e200b625b7c2625a..cceb7b4cef7a0d8808caac0cfeebee60b6cd7604 100644
 --- a/!doctype html.txt	
-+++ b/!doctype html.txt	
-@@ -1,1083 +1,1257 @@
++++ b/index.html
+@@ -1,1083 +1,1260 @@
 -<!doctype html>
 -<html lang="es">
 -<head>
@@ -1481,7 +1485,7 @@ index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdc
 +<header>
 +  <div class="wrap">
 +    <div class="toprow">
-+      <h1>Felipe Forero <span class="badge"><strong>Music First</strong> • simple • medible</span></h1>
++      <h1>Felipe Forero <span class="badge"><strong>Music First</strong> • simple • medible</span> <span class="badge" id="appVersionBadge">v0</span></h1>
 +
 +      <div class="daynav">
 +        <span class="badge" id="todayLabel">Hoy</span>
@@ -1705,6 +1709,7 @@ index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdc
 +const WEIGHTS = { musica_min:3, musica_deep:5, gym:2, skate:2, italiano:1, edicion:2, foto:2, animacion:2, tatuar:2 };
 +
 +/** ========= Storage ========= */
++const APP_VERSION="2026.02.25";
 +const LS_KEY="felipe_forero_dashboard_v3";
 +function loadData(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
 +function saveData(data){localStorage.setItem(LS_KEY, JSON.stringify(data));}
@@ -1763,6 +1768,7 @@ index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdc
 +const workTodayWindow=document.getElementById("workTodayWindow");
 +const workDaysList=document.getElementById("workDaysList");
 +const workLogBtn=document.getElementById("workLogBtn");
++const appVersionBadge=document.getElementById("appVersionBadge");
 +
 +const modalBack=document.getElementById("modalBack");
 +const closeModalBtn=document.getElementById("closeModalBtn");
@@ -2333,6 +2339,7 @@ index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdc
 +/** ========= Init ========= */
 +(function init(){
 +  const splash=document.getElementById("splash");
++  appVersionBadge.textContent = `v${APP_VERSION}`;
 +  setTimeout(()=>splash.classList.add("hide"), 700);
 +
 +  const now=new Date();
@@ -2344,3 +2351,6 @@ index 1c9474abbe203c42cf68f426e200b625b7c2625a..368c3bb986cb5c20db3a3290628c2cdc
 +</script>
 +</body>
 +</html>
+ 
+EOF
+)
